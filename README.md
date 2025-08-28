@@ -1,12 +1,12 @@
-# iam-security-system
 
 # iam-security-system
 
-1. Clone the Repository:-
+# 1. Clone the Repository:-
+
    git clone <YOUR_REPO_URL>
    cd iam-security-system
 
-2. Install Dependencies:-
+# 2. Install Dependencies:-
     Backend
     cd backend
     npm install
@@ -15,7 +15,7 @@
     cd ../frontend
     npm install
    
-4. Setup Environment Variables (Backend):-
+# 4. Setup Environment Variables (Backend):-
 
     Create a new file named .env inside the backend folder:
 
@@ -25,7 +25,7 @@
     │   └── ...
     └── frontend/
 
-5. Prisma Setup:-
+# 5. Prisma Setup:-
 
     From inside the backend/ folder, run:
     
@@ -40,7 +40,7 @@
     
     npx prisma db seed
 
-6. Run the Servers:-
+# 6. Run the Servers:-
     Backend
     cd backend
     npm run dev
@@ -55,7 +55,7 @@
     
     ➡️ Frontend runs at: http://localhost:5173
 
-7. Default Admin Account:-
+# 7. Default Admin Account:-
 
     After seeding, you’ll have a default admin account:
     
