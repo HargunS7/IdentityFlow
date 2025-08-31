@@ -1,42 +1,107 @@
+/* Full-screen page background */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background: #0b0033; /* dark shiny purple */
+  position: relative;
+}
+
+/* Bubble container (behind form) */
+#bubbles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Each bubble */
+.bubble {
+  position: absolute;
+  bottom: -100px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: rise 20s infinite;
+}
+
+/* Different sizes for bubbles */
+.bubble:nth-child(1) { width: 30px; height: 30px; left: 10%; animation-duration: 18s; }
+.bubble:nth-child(2) { width: 50px; height: 50px; left: 25%; animation-duration: 22s; }
+.bubble:nth-child(3) { width: 20px; height: 20px; left: 40%; animation-duration: 15s; }
+.bubble:nth-child(4) { width: 40px; height: 40px; left: 60%; animation-duration: 25s; }
+.bubble:nth-child(5) { width: 25px; height: 25px; left: 75%; animation-duration: 20s; }
+
+/* Bubble rise animation */
+@keyframes rise {
+  0% { transform: translateY(0) scale(1); opacity: 0.7; }
+  50% { opacity: 0.5; }
+  100% { transform: translateY(-120vh) scale(1.2); opacity: 0; }
+}
+
+/* Root container to center content */
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  z-index: 1; /* above bubbles */
+}
+
+/* Form container */
+.form-wrapper {
+  background-color: #0b1d59;
   padding: 2rem;
+  border-radius: 16px;
   text-align: center;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  min-height: 60%;
+  z-index: 2;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Heading */
+.login-heading {
+  color: #c084fc;
+  font-size: 2rem;
+  margin-bottom: 1rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Forms and buttons (same as before) */
+.login-form, .signup-form { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; }
+.login-form input, .signup-form input {
+  padding: 0.85rem 1rem; border-radius: 12px; border: none;
+  background-color: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;
 }
+.login-form input::placeholder, .signup-form input::placeholder { color: #cbd5e1; }
+.login-form input:focus, .signup-form input:focus { outline: 2px solid #7c3aed; }
+.login-form button, .signup-form button {
+  padding: 0.75rem; font-size: 1rem; font-weight: bold;
+  color: white; border: none; border-radius: 12px;
+  background: linear-gradient(to right, #7c3aed, #4f46e5);
+  cursor: pointer; transition: transform 0.2s;
+}
+.login-form button:hover, .signup-form button:hover { transform: scale(1.05); }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
+/* Signup toggle text */
+.signup-text { color: #d1d5db; margin-top: 1rem; font-size: 0.95rem; }
+.signup-btn { background: none; border: none; color: #7c3aed; cursor: pointer; text-decoration: underline; font-size: 0.95rem; margin-left: 0.25rem; padding: 0; }
+.signup-btn:hover { color: #c084fc; }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+/* Responsive tweaks */
+@media (max-width: 768px) { .form-wrapper { max-width: 90%; padding: 1.8rem; } .login-heading { font-size: 1.8rem; } }
+@media (max-width: 480px) { .form-wrapper { max-width: 95%; padding: 1.5rem; } .login-heading { font-size: 1.6rem; } }
