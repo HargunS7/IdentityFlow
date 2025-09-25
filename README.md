@@ -33,7 +33,8 @@
     
     # Generate Prisma client
     npx prisma generate
-    
+
+    ##DO NOT RUN THIS COMMAND THIS HAS ALREADY BEEN DONE
     # Apply migrations (creates tables in Supabase)
     npx prisma migrate dev
     
