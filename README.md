@@ -24,6 +24,8 @@
     │   ├── .env   👈 create this here
     │   └── ...
     └── frontend/
+    │   ├── .env   👈 create this here
+    │   └── ...
 
 # 5. Prisma Setup:-
 
