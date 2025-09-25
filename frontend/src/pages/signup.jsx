@@ -1,12 +1,15 @@
 import { useState } from "react";
-import axios from "axios";
+import { handleSignup } from "../controllers/authController";
+import { useAuth } from "../context/AuthContext";
 
 const Signup = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [passwordHint, setPasswordHint] = useState("");
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,13 +17,11 @@ const Signup = () => {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:3000/api/auth/signup", {
-        username,
-        email: email.toLowerCase(),
-        password, // backend will hash it
-      });
-
+      const res = await handleSignup({ username, email, password });
       alert("Signup successful!");
+      if (res?.user) {
+        login(res.user);
+      }
       setUsername("");
       setEmail("");
       setPassword("");
@@ -30,6 +31,17 @@ const Signup = () => {
     }
 
     setLoading(false);
+  };
+
+  const validatePasswordClient = (pwd) => {
+    if (pwd !== pwd.trim()) return "No spaces at start/end";
+    if (pwd.length < 12) return "At least 12 characters";
+    if (!/[a-z]/.test(pwd)) return "Add a lowercase letter";
+    if (!/[A-Z]/.test(pwd)) return "Add an uppercase letter";
+    if (!/[0-9]/.test(pwd)) return "Add a number";
+    if (!/[~!@#$%^&*()_+\-={}\[\]|;:\"'`,.<>/?]/.test(pwd)) return "Add a special character";
+    if (/(.)\1\1/.test(pwd)) return "Avoid 3+ repeating characters";
+    return "";
   };
 
   return (
@@ -51,10 +63,15 @@ const Signup = () => {
       <input
         type="password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => {
+          const val = e.target.value;
+          setPassword(val);
+          setPasswordHint(validatePasswordClient(val));
+        }}
         placeholder="Password"
         required
       />
+      {password && passwordHint && <p className="error">{passwordHint}</p>}
       <button type="submit" disabled={loading}>
         {loading ? "Signing up..." : "Sign Up"}
       </button>

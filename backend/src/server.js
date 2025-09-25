@@ -84,18 +84,40 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
-import { PrismaClient } from "@prisma/client";
 import authRouter from "./routes/auth.js";   // ✅ make sure path is correct
+import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
 
 const app = express();
-const prisma = new PrismaClient();
 
 // --------------------- MIDDLEWARE ---------------------
-app.use(helmet());
-app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json());
+app.disable("x-powered-by");
+app.set("trust proxy", 1);
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+
+const allowedOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+app.use(
+  cors({
+    origin: allowedOrigin,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+    ],
+  })
+);
+
+app.use(express.json({ limit: "10kb" }));
+app.use(cookieParser());
 app.use(morgan("dev"));
-app.use("/api/auth", authRouter);
 
 // --------------------- HEALTH CHECK ---------------------
 app.get("/health", (req, res) => {
@@ -103,7 +125,14 @@ app.get("/health", (req, res) => {
 });
 
 // --------------------- ROUTES ---------------------
-app.use("/api/auth", authRouter);  // mounts /signup and /login
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api/auth", authLimiter, authRouter);  // mounts /signup and /login
 
 // --------------------- START SERVER ---------------------
 const PORT = process.env.PORT || 3000;

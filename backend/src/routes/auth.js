@@ -1,79 +1,68 @@
 import express from "express";
-import argon2 from "argon2";
-import prisma from "../PrismaClient.js"; // Make sure this file exists and exports PrismaClient
-import jwt from "jsonwebtoken";
+import { signup, login } from "../controllers/authController.js";
+import { supabase } from "../lib/SupabaseClient.js";
+import { logAudit } from "../lib/logging.js";
+import { requireAuth } from "../middleware/jwtAuth.js";
 
 const router = express.Router();
 
-// JWT helper
-const generateToken = (user) => {
-  return jwt.sign(
-    { id: user.id, username: user.username },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "1h" }
-  );
-};
-
 // --------------------- SIGNUP ---------------------
-router.post("/signup", async (req, res) => {
+router.post("/signup", signup);
+
+// --------------------- LOGIN ---------------------
+router.post("/login", login);
+
+// --------------------- LOGOUT ---------------------
+router.post("/logout", async (req, res) => {
   try {
-    // ⚡ Properly destructure username, email, password from req.body
-    const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+    const refreshTokenId = req.cookies?.refresh_token_id;
+    const userId = req.body?.userId; // In real use, extract from auth middleware
+    if (refreshTokenId) {
+      await supabase
+        .from("Session")
+        .update({ active: false })
+        .eq("refreshTokenId", refreshTokenId);
+    }
+    if (userId) {
+      logAudit(userId, "LOGOUT", req);
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: "Email already registered" });
-    }
-
-    const hashedPassword = await argon2.hash(password);
-
-    const user = await prisma.user.create({
-      data: {
-        username, // ⚡ must be present
-        email,
-        passwordHash: hashedPassword,
-      },
-    });
-
-    const token = generateToken(user);
-
-    return res.status(201).json({ message: "User created successfully", user, token });
+    res.clearCookie("access_token", { path: "/" });
+    res.clearCookie("refresh_token_id", { path: "/" });
+    return res.json({ message: "Logged out" });
   } catch (err) {
-    console.error("🔥 Signup error:", err);
-    return res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("Logout error:", err);
+    return res.status(500).json({ error: "Logout failed" });
   }
 });
 
-// --------------------- LOGIN ---------------------
-router.post("/login", async (req, res) => {
+// --------------------- CURRENT USER ---------------------
+router.get("/me", requireAuth, async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password required" });
-    }
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
-
-    const valid = await argon2.verify(user.passwordHash, password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
-
-    const token = generateToken(user);
-
-    return res.json({
-      message: "Login successful",
-      user: { id: user.id, username: user.username, email: user.email },
-      token,
-    });
+    const userId = req.auth.userId;
+    const { data, error } = await supabase
+      .from("User")
+      .select("id, email, mfaEnabled, createdAt")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error || !data) return res.status(404).json({ error: "Not found" });
+    return res.json({ user: data });
   } catch (err) {
-    console.error("🔥 Login error:", err);
-    return res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("/me error:", err);
+    return res.status(500).json({ error: "Failed to fetch profile" });
   }
+});
+
+// --------------------- PLACEHOLDER ROUTES (to avoid 404 during UI build) ---------------------
+// TODO: Move to dedicated routers/controllers when implementing real logic
+router.get("/sessions", requireAuth, async (req, res) => {
+  // Return empty array or mock until backend implemented
+  return res.json({ sessions: [] });
+});
+
+router.get("/audit-logs", requireAuth, async (req, res) => {
+  // Return empty array or mock until backend implemented
+  return res.json({ logs: [] });
 });
 
 export default router;
