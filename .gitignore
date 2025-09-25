@@ -3,4 +3,5 @@ backend/.env
 backend/node_modules
 
 #frontend
+frontend/.env
 frontend/node_modules
