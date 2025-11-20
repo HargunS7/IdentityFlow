@@ -163,7 +163,7 @@ export const login = async (req, res) => {
 
     return res.json({
       message: "Login successful",
-      user: { id: user.id, email: user.email, username: user.username || undefined },
+      user: { id: user.id, email: user.email, username: user.username || undefined ,token:token},
     });
   } catch (err) {
     console.error("🔥 Login error:", err);

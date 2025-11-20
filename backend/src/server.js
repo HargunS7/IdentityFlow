@@ -88,6 +88,8 @@ import authRouter from "./routes/auth.js";   // ✅ make sure path is correct
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 
+import iamRoutes from "./routes/iamRoutes.js";
+
 const app = express();
 
 // --------------------- MIDDLEWARE ---------------------
@@ -133,7 +135,7 @@ const authLimiter = rateLimit({
 });
 
 app.use("/api/auth", authLimiter, authRouter);  // mounts /signup and /login
-
+app.use("/api",iamRoutes);
 // --------------------- START SERVER ---------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
