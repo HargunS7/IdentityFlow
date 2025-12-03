@@ -110,6 +110,12 @@ import { PrismaClient } from "@prisma/client";
 import { auth } from "../middleware/auth.js";
 import { requireRoles, requirePerms } from "../middleware/rbac.js";
 
+import {
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../controllers/iamUserController.js";
+
 const prisma = new PrismaClient();
 const router = express.Router();
 
@@ -152,63 +158,89 @@ router.get(
   }
 );
 
-/**
- * POST /api/admin/users
- * Permission: USER_CREATE
- * Stub endpoint – just to test RBAC. You can later implement real create logic.
- */
+// /**
+//  * POST /api/admin/users
+//  * Permission: USER_CREATE
+//  * Stub endpoint – just to test RBAC. You can later implement real create logic.
+//  */
+// router.post(
+//   "/admin/users",
+//   auth(true),
+//   requirePerms("USER_CREATE"),
+//   async (req, res) => {
+//     // For now, don't actually create a user; just prove permission works
+//     return res.json({
+//       message: "USER_CREATE allowed – implement actual create logic later",
+//       performedBy: req.user.id,
+//       body: req.body,
+//     });
+//   }
+// );
+
+// /**
+//  * PATCH /api/admin/users/:id
+//  * Permission: USER_UPDATE
+//  * Stub endpoint – for RBAC testing.
+//  */
+// router.patch(
+//   "/admin/users/:id",
+//   auth(true),
+//   requirePerms("USER_UPDATE"),
+//   async (req, res) => {
+//     const { id } = req.params;
+//     return res.json({
+//       message: "USER_UPDATE allowed – implement actual update logic later",
+//       targetUserId: id,
+//       performedBy: req.user.id,
+//       body: req.body,
+//     });
+//   }
+// );
+
+// /**
+//  * DELETE /api/admin/users/:id
+//  * Permission: USER_DELETE
+//  * Stub endpoint – for RBAC testing.
+//  */
+// router.delete(
+//   "/admin/users/:id",
+//   auth(true),
+//   requirePerms("USER_DELETE"),
+//   async (req, res) => {
+//     const { id } = req.params;
+//     return res.json({
+//       message: "USER_DELETE allowed – implement actual delete logic later",
+//       targetUserId: id,
+//       performedBy: req.user.id,
+//     });
+//   }
+// );
+
+
+// POST /api/admin/users  (USER_CREATE)
 router.post(
   "/admin/users",
   auth(true),
   requirePerms("USER_CREATE"),
-  async (req, res) => {
-    // For now, don't actually create a user; just prove permission works
-    return res.json({
-      message: "USER_CREATE allowed – implement actual create logic later",
-      performedBy: req.user.id,
-      body: req.body,
-    });
-  }
+  createUser
 );
 
-/**
- * PATCH /api/admin/users/:id
- * Permission: USER_UPDATE
- * Stub endpoint – for RBAC testing.
- */
+// PATCH /api/admin/users/:id  (USER_UPDATE)
 router.patch(
   "/admin/users/:id",
   auth(true),
   requirePerms("USER_UPDATE"),
-  async (req, res) => {
-    const { id } = req.params;
-    return res.json({
-      message: "USER_UPDATE allowed – implement actual update logic later",
-      targetUserId: id,
-      performedBy: req.user.id,
-      body: req.body,
-    });
-  }
+  updateUser
 );
 
-/**
- * DELETE /api/admin/users/:id
- * Permission: USER_DELETE
- * Stub endpoint – for RBAC testing.
- */
+// DELETE /api/admin/users/:id  (USER_DELETE)
 router.delete(
   "/admin/users/:id",
   auth(true),
   requirePerms("USER_DELETE"),
-  async (req, res) => {
-    const { id } = req.params;
-    return res.json({
-      message: "USER_DELETE allowed – implement actual delete logic later",
-      targetUserId: id,
-      performedBy: req.user.id,
-    });
-  }
+  deleteUser
 );
+
 
 /* -------------------------------------------------------------------------- */
 /*                               ROLE MANAGEMENT                              */
