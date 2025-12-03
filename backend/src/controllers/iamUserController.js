@@ -7,6 +7,8 @@ import {
   validatePasswordStrength,
 } from "../lib/validation.js";
 
+import { logAudit,logSession } from "../lib/logging.js";
+
 const prisma = new PrismaClient();
 
 // /**
@@ -125,6 +127,13 @@ export const createUser = async (req, res) => {
         mfaEnabled: true,
         createdAt: true,
       },
+    });
+
+    // 🔐 Audit
+    logAudit(req.user.id, "USER_CREATE", req, {
+      targetUserId: user.id,
+      email: user.email,
+      username: user.username,
     });
 
     return res.status(201).json({
@@ -258,6 +267,12 @@ export const updateUser = async (req, res) => {
         .json({ error: "User not found or could not be updated" });
     }
 
+    // 🔐 Audit
+    logAudit(req.user.id, "USER_UPDATE", req, {
+      targetUserId: id,
+      changedFields: Object.keys(data),
+    });
+
     return res.json({
       message: "User updated successfully",
       user: updated,
@@ -291,6 +306,13 @@ export const deleteUser = async (req, res) => {
       prisma.auditLog.deleteMany({ where: { userId: id } }),
       prisma.user.delete({ where: { id } }),
     ]);
+
+
+    // 🔐 Audit
+    logAudit(req.user.id, "USER_DELETE", req, {
+      targetUserId: id,
+      deletedEmail: existing.email,
+    });
 
     return res.json({
       message: "User deleted successfully",

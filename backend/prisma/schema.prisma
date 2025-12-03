@@ -4,70 +4,67 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DIRECT_URL")
+  url        = env("DATABASE_URL")   // ← USE POOLER (:6543)
+  directUrl  = env("DIRECT_URL")     // ← OPTIONAL, used by CLI only
 }
 
 model User {
-  id           String     @id @default(uuid()) @db.Uuid
-  username     String?    @unique
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   email        String     @unique
   passwordHash String
   mfaEnabled   Boolean    @default(false)
   mfaSecret    String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  roles        UserRole[]
-  sessions     Session[]
+  createdAt    DateTime?  @db.Timestamptz(6)
+  updatedAt    DateTime?  @updatedAt @db.Timestamptz(6)
+  username     String?    @unique
   auditLogs    AuditLog[] @relation("UserAuditLogs")
+  sessions     Session[]
+  roles        UserRole[]
 }
 
 model Role {
   id          String           @id @default(uuid()) @db.Uuid
   name        String           @unique
-  userRoles   UserRole[]
   permissions RolePermission[]
+  userRoles   UserRole[]
 }
 
 model Permission {
-  id          String           @id @default(uuid()) @db.Uuid
-  code        String           @unique
-  roles       RolePermission[]
+  id    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code  String           @unique
+  roles RolePermission[]
 }
 
 model RolePermission {
-  id           String      @id @default(uuid()) @db.Uuid
-  roleId       String      @db.Uuid
-  permissionId String      @db.Uuid
-
-  role         Role        @relation(fields: [roleId], references: [id])
-  permission   Permission  @relation(fields: [permissionId], references: [id])
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
 
   @@unique([roleId, permissionId])
 }
 
 model UserRole {
-  id     String @id @default(uuid()) @db.Uuid
-
-  userId String @db.Uuid @map("user_id")
-  roleId String @db.Uuid @map("role_id")
-
-  user   User   @relation(fields: [userId], references: [id])
+  id     String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
   role   Role   @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
-  @@unique([userId, roleId])
+  @@unique([userId, roleId], map: "UserRole_userId_roleId_key")
 }
 
 model Session {
   id             String   @id @default(uuid()) @db.Uuid
   userId         String   @db.Uuid
-  user           User     @relation(fields: [userId], references: [id])
   refreshTokenId String   @unique
   userAgent      String?
   ip             String?
   active         Boolean  @default(true)
   createdAt      DateTime @default(now())
   expiresAt      DateTime
+  user           User     @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
@@ -78,6 +75,5 @@ model AuditLog {
   meta      Json?
   ip        String?
   createdAt DateTime @default(now())
-
   user      User?    @relation("UserAuditLogs", fields: [userId], references: [id])
 }

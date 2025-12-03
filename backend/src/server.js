@@ -14,6 +14,9 @@ const app = express();
 
 // --------------------- MIDDLEWARE ---------------------
 
+console.log("Runtime DATABASE_URL:", process.env.DATABASE_URL);
+
+
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
