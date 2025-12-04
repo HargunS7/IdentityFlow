@@ -118,6 +118,11 @@ import {
 
 import { assignRole } from "../controllers/iamRoleController.js";
 
+import {
+  listSessions,
+  revokeSession,
+} from "../controllers/iamSessionController.js";
+
 const prisma = new PrismaClient();
 const router = express.Router();
 
@@ -332,23 +337,7 @@ router.get(
   "/admin/sessions",
   auth(true),
   requirePerms("SESSION_READ"),
-  async (req, res) => {
-    const sessions = await prisma.session.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      select: {
-        id: true,
-        userId: true,
-        refreshTokenId: true,
-        userAgent: true,
-        ip: true,
-        active: true,
-        createdAt: true,
-        expiresAt: true,
-      },
-    });
-    res.json(sessions);
-  }
+  listSessions
 );
 
 /**
@@ -360,33 +349,7 @@ router.post(
   "/admin/sessions/revoke",
   auth(true),
   requirePerms("SESSION_REVOKE"),
-  async (req, res) => {
-    const { sessionId, refreshTokenId } = req.body;
-    if (!sessionId && !refreshTokenId) {
-      return res
-        .status(400)
-        .json({ error: "sessionId or refreshTokenId is required" });
-    }
-
-    let where;
-    if (sessionId) where = { id: sessionId };
-    else where = { refreshTokenId };
-
-    try {
-      const updated = await prisma.session.updateMany({
-        where,
-        data: { active: false },
-      });
-
-      return res.json({
-        success: true,
-        updatedCount: updated.count,
-      });
-    } catch (e) {
-      console.error("SESSION_REVOKE error:", e);
-      return res.status(500).json({ error: "Failed to revoke session" });
-    }
-  }
+  revokeSession
 );
 
 /* -------------------------------------------------------------------------- */
