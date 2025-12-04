@@ -116,6 +116,8 @@ import {
   deleteUser,
 } from "../controllers/iamUserController.js";
 
+import { assignRole } from "../controllers/iamRoleController.js";
+
 const prisma = new PrismaClient();
 const router = express.Router();
 
@@ -251,37 +253,45 @@ router.delete(
  * Permission: ROLE_ASSIGN
  * body: { userId: string, roleName: string }
  */
+// router.post(
+//   "/admin/assign-role",
+//   auth(true),
+//   requirePerms("ROLE_ASSIGN"),
+//   async (req, res) => {
+//     const { userId, roleName } = req.body;
+
+//     if (!userId || !roleName) {
+//       return res
+//         .status(400)
+//         .json({ error: "userId and roleName are required" });
+//     }
+
+//     const role = await prisma.role.findUnique({ where: { name: roleName } });
+//     if (!role) return res.status(400).json({ error: "Role not found" });
+
+//     try {
+//       await prisma.userRole.create({
+//         data: {
+//           userId,
+//           roleId: role.id,
+//         },
+//       });
+//     } catch (e) {
+//       // ignore duplicate errors
+//       console.warn("assign-role: probably duplicate mapping", e.code);
+//     }
+
+//     res.json({ success: true });
+//   }
+// );
+
 router.post(
   "/admin/assign-role",
   auth(true),
   requirePerms("ROLE_ASSIGN"),
-  async (req, res) => {
-    const { userId, roleName } = req.body;
-
-    if (!userId || !roleName) {
-      return res
-        .status(400)
-        .json({ error: "userId and roleName are required" });
-    }
-
-    const role = await prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) return res.status(400).json({ error: "Role not found" });
-
-    try {
-      await prisma.userRole.create({
-        data: {
-          userId,
-          roleId: role.id,
-        },
-      });
-    } catch (e) {
-      // ignore duplicate errors
-      console.warn("assign-role: probably duplicate mapping", e.code);
-    }
-
-    res.json({ success: true });
-  }
+  assignRole
 );
+
 
 /* -------------------------------------------------------------------------- */
 /*                               USER LOOKUP API                              */
