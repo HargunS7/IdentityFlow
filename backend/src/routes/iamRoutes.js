@@ -116,12 +116,14 @@ import {
   deleteUser,
 } from "../controllers/iamUserController.js";
 
-import { assignRole } from "../controllers/iamRoleController.js";
+import { assignRole,removeRole } from "../controllers/iamRoleController.js";
 
 import {
   listSessions,
   revokeSession,
 } from "../controllers/iamSessionController.js";
+
+import { listAuditLogs } from "../controllers/auditController.js";
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -365,22 +367,7 @@ router.get(
   "/admin/audit-logs",
   auth(true),
   requirePerms("AUDIT_READ"),
-  async (req, res) => {
-    const logs = await prisma.auditLog.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      select: {
-        id: true,
-        userId: true,
-        actorId: true,
-        action: true,
-        meta: true,
-        ip: true,
-        createdAt: true,
-      },
-    });
-    res.json(logs);
-  }
+  listAuditLogs
 );
 
 
@@ -394,33 +381,7 @@ router.delete(
   "/admin/remove-role",
   auth(true),
   requireRoles("admin"),
-  async (req, res) => {
-    const { userId, roleName } = req.body;
-
-    if (!userId || !roleName) {
-      return res
-        .status(400)
-        .json({ error: "userId and roleName are required" });
-    }
-
-    if (roleName === "user") {
-      return res
-        .status(400)
-        .json({ error: "Cannot remove base role 'user' from any account" });
-    }
-
-    const role = await prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) return res.status(400).json({ error: "Role not found" });
-
-    await prisma.userRole.deleteMany({
-      where: {
-        userId,
-        roleId: role.id,
-      },
-    });
-
-    return res.json({ success: true });
-  }
+  removeRole
 );
 
 
