@@ -70,6 +70,10 @@ export const removeRole = async (req, res) => {
         .json({ error: "userId and roleName are required" });
     }
 
+      if(roleName==='user'){
+        return res.status(400).json({error:"Cannot remove base role 'user'"});
+      }
+
     const role = await prisma.role.findUnique({ where: { name: roleName } });
     if (!role) return res.status(400).json({ error: "Role not found" });
 
