@@ -111,10 +111,12 @@ import { auth } from "../middleware/auth.js";
 import { requireRoles, requirePerms } from "../middleware/rbac.js";
 
 import {
+  getMe,
   listUsers,
   createUser,
   updateUser,
   deleteUser,
+  userLookup
 } from "../controllers/iamUserController.js";
 
 import { assignRole,removeRole } from "../controllers/iamRoleController.js";
@@ -133,13 +135,11 @@ const router = express.Router();
  * GET /api/me
  * Any logged-in user – returns profile + roles + permissions
  */
-router.get("/me", auth(true), async (req, res) => {
-  res.json({
-    user: req.user,
-    roles: req.userRoles,
-    permissions: req.userPerms,
-  });
-});
+router.get(
+  "/me", 
+  auth(true),
+  getMe
+);
 
 /* -------------------------------------------------------------------------- */
 /*                               USER MANAGEMENT                              */
@@ -240,6 +240,19 @@ router.delete(
   deleteUser
 );
 
+/**
+ * GET /api/users/lookup?email=...
+ * Permission: USER_READ
+ */
+router.get(
+  "/users/lookup",
+  auth(true),
+  requirePerms("USER_READ"),
+  
+  userLookup
+);
+
+
 
 /* -------------------------------------------------------------------------- */
 /*                               ROLE MANAGEMENT                              */
@@ -289,32 +302,15 @@ router.post(
   assignRole
 );
 
-
-/* -------------------------------------------------------------------------- */
-/*                               USER LOOKUP API                              */
-/* -------------------------------------------------------------------------- */
-
-/**
- * GET /api/users/lookup?email=...
- * Permission: USER_READ
- */
-router.get(
-  "/users/lookup",
+// DELETE /api/admin/remove-role
+// body: { userId, roleName }
+router.delete(
+  "/admin/remove-role",
   auth(true),
-  requirePerms("USER_READ"),
-  async (req, res) => {
-    const { email } = req.query;
-    if (!email)
-      return res.status(400).json({ error: "email is required" });
-
-    const user = await prisma.user.findUnique({
-      where: { email: String(email) },
-      select: { id: true, email: true },
-    });
-
-    res.json({ found: !!user, user });
-  }
+  requireRoles("admin"),
+  removeRole
 );
+
 
 /* -------------------------------------------------------------------------- */
 /*                                   SESSIONS                                 */
@@ -361,18 +357,7 @@ router.get(
 );
 
 
-/* ----------------------------------------------------------------------------------- */
-/*                                 removing Permissons                                 */
-/* ----------------------------------------------------------------------------------- */
 
-// DELETE /api/admin/remove-role
-// body: { userId, roleName }
-router.delete(
-  "/admin/remove-role",
-  auth(true),
-  requireRoles("admin"),
-  removeRole
-);
 
 
 

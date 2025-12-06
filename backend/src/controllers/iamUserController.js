@@ -11,17 +11,17 @@ import { logAudit,logSession } from "../lib/logging.js";
 
 const prisma = new PrismaClient();
 
-// /**
-//  * GET /api/me
-//  * Just returns what auth middleware put on req
-//  */
-// export const getMe = (req, res) => {
-//   return res.json({
-//     user: req.user,
-//     roles: req.userRoles || [],
-//     permissions: req.userPerms || [],
-//   });
-// };
+/**
+ * GET /api/me
+ * Just returns what auth middleware put on req
+ */
+export const getMe = (req, res) => {
+  return res.json({
+    user: req.user,
+    roles: req.userRoles || [],
+    permissions: req.userPerms || [],
+  });
+};
 
 /**
  * GET /api/admin/users
@@ -324,3 +324,22 @@ export const deleteUser = async (req, res) => {
     return res.status(500).json({ error: "Failed to delete user" });
   }
 };
+
+export const userLookup = async (req, res) => {
+    const { email } = req.query;
+    if (!email)
+      return res.status(400).json({ error: "email is required" });
+    try{
+      
+      const user = await prisma.user.findUnique({
+      where: { email: String(email) },
+      select: { id: true, email: true },
+
+    });
+    res.json({ found: !!user, user });
+  }catch(err){
+    console.error("userLookup error:", err);
+    return res.status(500).json({error:"Failed to lookup user"});
+  }
+   
+  };
