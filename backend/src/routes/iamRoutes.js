@@ -111,6 +111,7 @@ import { auth } from "../middleware/auth.js";
 import { requireRoles, requirePerms } from "../middleware/rbac.js";
 
 import {
+  listUsers,
   createUser,
   updateUser,
   deleteUser,
@@ -153,18 +154,7 @@ router.get(
   "/admin/users",
   auth(true),
   requirePerms("ADMIN"),
-  async (req, res) => {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        mfaEnabled: true,
-        createdAt: true,
-      },
-    });
-    res.json(users);
-  }
+  listUsers
 );
 
 // /**

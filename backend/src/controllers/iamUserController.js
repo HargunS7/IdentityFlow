@@ -23,27 +23,27 @@ const prisma = new PrismaClient();
 //   });
 // };
 
-// /**
-//  * GET /api/admin/users
-//  * Requires USER_READ (enforced in route)
-//  */
-// export const listUsers = async (req, res) => {
-//   try {
-//     const users = await prisma.user.findMany({
-//       select: {
-//         id: true,
-//         email: true,
-//         username: true,
-//         mfaEnabled: true,
-//         createdAt: true,
-//       },
-//     });
-//     return res.json(users);
-//   } catch (err) {
-//     console.error("listUsers error:", err);
-//     return res.status(500).json({ error: "Failed to list users" });
-//   }
-// };
+/**
+ * GET /api/admin/users
+ * Requires USER_READ (enforced in route)
+ */
+export const listUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        mfaEnabled: true,
+        createdAt: true,
+      },
+    });
+    return res.json(users);
+  } catch (err) {
+    console.error("listUsers error:", err);
+    return res.status(500).json({ error: "Failed to list users" });
+  }
+};
 
 /**
  * POST /api/admin/users
