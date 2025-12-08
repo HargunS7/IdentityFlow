@@ -60,10 +60,10 @@ export const listSessions = async (req, res) => {
     });
 
     // Optional audit
-    logAudit(req.user.id, "SESSION_LIST", req, {
-      filter: { identifier: identifier || null, limit },
-      resultCount: sessions.length,
-    });
+    // logAudit(req.user.id, "SESSION_LIST", req, {
+    //   filter: { identifier: identifier || null, limit },
+    //   resultCount: sessions.length,
+    // });
 
     return res.json({
       sessions,
