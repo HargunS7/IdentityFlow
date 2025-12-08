@@ -3,23 +3,28 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url        = env("DATABASE_URL")   // ← USE POOLER (:6543)
-  directUrl  = env("DIRECT_URL")     // ← OPTIONAL, used by CLI only
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // ← USE POOLER (:6543)
+  directUrl = env("DIRECT_URL") // ← OPTIONAL, used by CLI only
 }
 
 model User {
-  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  email        String     @unique
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email        String    @unique
   passwordHash String
-  mfaEnabled   Boolean    @default(false)
+  mfaEnabled   Boolean   @default(false)
   mfaSecret    String?
-  createdAt    DateTime?  @db.Timestamptz(6)
-  updatedAt    DateTime?  @updatedAt @db.Timestamptz(6)
-  username     String?    @unique
-  auditLogs    AuditLog[] @relation("UserAuditLogs")
-  sessions     Session[]
-  roles        UserRole[]
+  createdAt    DateTime? @db.Timestamptz(6)
+  updatedAt    DateTime? @updatedAt @db.Timestamptz(6)
+  username     String?   @unique
+
+  auditLogs AuditLog[] @relation("UserAuditLogs")
+  sessions  Session[]
+  roles     UserRole[]
+
+  // REQUIRED BACK-RELATIONS:
+  tempGrantsReceived TempPermissionGrant[] @relation("UserTempGrants")
+  tempGrantsGiven    TempPermissionGrant[] @relation("GrantGiver")
 }
 
 model Role {
@@ -76,4 +81,17 @@ model AuditLog {
   ip        String?
   createdAt DateTime @default(now())
   user      User?    @relation("UserAuditLogs", fields: [userId], references: [id])
+}
+
+model TempPermissionGrant {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  permission  String
+  grantedById String   @db.Uuid
+  reason      String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user      User @relation("UserTempGrants", fields: [userId], references: [id])
+  grantedBy User @relation("GrantGiver", fields: [grantedById], references: [id])
 }
