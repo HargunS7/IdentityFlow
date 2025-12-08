@@ -1,6 +1,5 @@
 // backend/src/routes/iamRoutes.js
 import express from "express";
-import { PrismaClient } from "@prisma/client";
 import { auth } from "../middleware/auth.js";
 import { requireRoles, requirePerms } from "../middleware/rbac.js";
 
@@ -15,14 +14,10 @@ import {
 
 import { assignRole,removeRole } from "../controllers/iamRoleController.js";
 
-import {
-  listSessions,
-  revokeSession,
-} from "../controllers/iamSessionController.js";
+import { listSessions,revokeSession } from "../controllers/iamSessionController.js";
 
 import { listAuditLogs } from "../controllers/auditController.js";
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 /**
@@ -156,10 +151,6 @@ router.get(
   requirePerms("AUDIT_READ"),
   listAuditLogs
 );
-
-
-
-
 
 
 // ----------------------------------DEBUG------------------------------------
