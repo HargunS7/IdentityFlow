@@ -83,6 +83,7 @@ model AuditLog {
   user      User?    @relation("UserAuditLogs", fields: [userId], references: [id])
 }
 
+
 model TempPermissionGrant {
   id          String   @id @default(uuid()) @db.Uuid
   userId      String   @db.Uuid
