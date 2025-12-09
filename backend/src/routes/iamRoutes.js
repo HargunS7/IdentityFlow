@@ -18,6 +18,8 @@ import { listSessions,revokeSession } from "../controllers/iamSessionController.
 
 import { listAuditLogs } from "../controllers/auditController.js";
 
+import { grantTemporaryPermission } from "../controllers/iamTempPermController.js";
+
 const router = express.Router();
 
 /**
@@ -151,6 +153,18 @@ router.get(
   requirePerms("AUDIT_READ"),
   listAuditLogs
 );
+
+
+/* -----------------------------------------------------------------------*/
+/*                          TEMP ROLE MANAGEMENT                          */
+/* -----------------------------------------------------------------------*/
+
+router.post(
+  "/admin/temp-permissions/grant",
+  auth(true),
+  requirePerms("TEMP_GRANT"), // You must add this permission to admin role
+  grantTemporaryPermission
+);  
 
 
 // ----------------------------------DEBUG------------------------------------

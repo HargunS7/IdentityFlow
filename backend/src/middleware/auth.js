@@ -68,7 +68,32 @@ export function auth(required = true) {
       // Attach to request so routes can use them
       req.user = user;
       req.userRoles = roleNames;
-      req.userPerms = permCodes;
+      // req.userPerms = permCodes;
+
+
+//------------------------------------------------------------------------------------
+    
+//trying out the JIT access/ temporary privellege escalation
+
+      // loading  temporary permissions
+      const now = new Date();
+      const tempGrants = await prisma.tempPermissionGrant.findMany({
+        where: {
+          userId: user.id,
+          expiresAt: { gt: now },
+        },
+      });
+
+      // extracting permission strings
+      const tempPerms = tempGrants.map((g) => g.permission);
+
+      // meerge (dedupe)
+      req.userPerms = [...new Set([...permCodes, ...tempPerms])];
+
+      
+
+//------------------------------------------------------------------------------------
+
 
       // (Later, for RLS) we can also set Postgres session vars here
 
