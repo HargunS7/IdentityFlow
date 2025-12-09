@@ -18,7 +18,7 @@ import { listSessions,revokeSession } from "../controllers/iamSessionController.
 
 import { listAuditLogs } from "../controllers/auditController.js";
 
-import { grantTemporaryPermission } from "../controllers/iamTempPermController.js";
+import { grantTemporaryPermission,listTemporaryPermissions,revokeTemporaryPermission } from "../controllers/iamTempPermController.js";
 
 const router = express.Router();
 
@@ -165,6 +165,23 @@ router.post(
   requirePerms("TEMP_GRANT"), // You must add this permission to admin role
   grantTemporaryPermission
 );  
+
+
+// List temp permissions (optionally filter by user / activeOnly / limit)
+router.get(
+  "/admin/temp-permissions",
+  auth(true),
+  requirePerms("TEMP_GRANT"), // You can later split into TEMP_VIEW
+  listTemporaryPermissions
+);
+
+// Revoke a temp permission grant
+router.post(
+  "/admin/temp-permissions/revoke",
+  auth(true),
+  requirePerms("TEMP_GRANT"), // or TEMP_REVOKE if you add it
+  revokeTemporaryPermission
+);
 
 
 // ----------------------------------DEBUG------------------------------------
