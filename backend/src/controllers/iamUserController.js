@@ -15,11 +15,24 @@ const prisma = new PrismaClient();
  * GET /api/me
  * Just returns what auth middleware put on req
  */
+// export const getMe = (req, res) => {
+//   return res.json({
+//     user: req.user,
+//     roles: req.userRoles || [],
+//     permissions: req.userPerms || [],
+//   });
+// };
+
 export const getMe = (req, res) => {
   return res.json({
     user: req.user,
     roles: req.userRoles || [],
-    permissions: req.userPerms || [],
+    permissions: {
+      permanent: req.userPermsPermanent || [],
+      temporary: req.userPermsTemp || [],
+      combined: req.userPerms || [],
+    },
+    tempGrants: req.tempPermissionGrants || [],
   });
 };
 
