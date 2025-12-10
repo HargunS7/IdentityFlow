@@ -1,64 +1,66 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Login from "./pages/login";
-import Signup from "./pages/signup";
-import Dashboard from "./pages/dashboard";
-import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
-import "./App.css";
+// src/App.jsx
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext.jsx";
 
-function AppContent() {
-  const [showLogin, setShowLogin] = useState(true);
-  const { user, loading } = useAuth();
+import LoginPage from "./pages/login.jsx";
+import SignupPage from "./pages/signup.jsx";
+import DashboardPage from "./pages/dashboard.jsx";
 
+// Temporary placeholder
+function LandingPage() {
   return (
-    <>
-      {/* Bubble container */}
-      <div id="bubbles">
-        <div className="bubble"></div>
-        <div className="bubble"></div>
-        <div className="bubble"></div>
-        <div className="bubble"></div>
-        <div className="bubble"></div>
-      </div>
-
-      {/* Form container */}
-      <motion.div className="form-wrapper" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        {loading ? (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}>Loading...</motion.p>
-        ) : user ? (
-          <AnimatePresence mode="wait">
-            <motion.div key="dash" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.25 }}>
-              <Dashboard />
-            </motion.div>
-          </AnimatePresence>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div key={showLogin ? "login" : "signup"} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.25 }}>
-              <h2 className="login-heading">
-                {showLogin ? "Log In" : "Sign Up"}
-              </h2>
-              {showLogin ? <Login /> : <Signup />}
-              <p className="signup-text">
-                {showLogin ? "Don’t have an account?" : "Already have an account?"}{" "}
-                <button
-                  className="signup-btn"
-                  onClick={() => setShowLogin(!showLogin)}
-                >
-                  {showLogin ? "Sign Up" : "Log In"}
-                </button>
-              </p>
-            </motion.div>
-          </AnimatePresence>
-        )}
-      </motion.div>
-    </>
+    <div style={{ padding: "40px", textAlign: "center" }}>
+      <h1>IAM Educational Project</h1>
+      <p>This is the landing page. More content will come later.</p>
+      <a href="/login">Go to Login →</a>
+    </div>
   );
 }
 
-export default function App() {
+// Protected route wrapper
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) return <p>Loading...</p>;
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  return children;
+}
+
+function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 404 fallback */}
+        <Route
+          path="*"
+          element={
+            <div style={{ padding: "40px" }}>
+              <h2>404 - Page Not Found</h2>
+              <a href="/">Go Home</a>
+            </div>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
+
+export default App;

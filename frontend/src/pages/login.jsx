@@ -1,55 +1,52 @@
-import { useState } from "react";
-import { handleLogin } from "../controllers/authController";
-import { useAuth } from "../context/AuthContext";
+// src/pages/login.jsx
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext.jsx";
 
-const Login = () => {
+export default function LoginPage() {
+  const { login } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
     try {
-      const data = await handleLogin({ identifier, password });
-      login(data.user);
-      alert("Login successful!");
-      setIdentifier("");
-      setPassword("");
+      await login({ identifier, password });
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || "Login failed");
+      setError("Invalid credentials");
     }
-
-    setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="login-form">
-      <input
-        type="text"
-        value={identifier}
-        onChange={(e) => setIdentifier(e.target.value)}
-        placeholder="Email or Username"
-        required
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-        required
-      />
-      <button type="submit" disabled={loading}>
-        {loading ? "Logging in..." : "Login"}
-      </button>
-      {error && <p className="error">{error}</p>}
-    </form>
-  );
-};
+    <div style={{ maxWidth: "420px", margin: "60px auto" }}>
+      <h2>Login</h2>
 
-export default Login;
+      <form onSubmit={handleLogin}>
+        <input
+          type="text"
+          placeholder="Email or username"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          required
+        />
+        <br />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <br />
+
+        {error && <p style={{ color: "red" }}>{error}</p>}
+
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  );
+}
