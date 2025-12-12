@@ -1,66 +1,47 @@
 // src/App.jsx
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext.jsx";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PublicLayout from "./layouts/publicLayout.jsx";
+import AuthLayout from "./layouts/authLayout.jsx";
+import AppLayout from "./layouts/appLayout.jsx";
+// import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
-import LoginPage from "./pages/login.jsx";
-import SignupPage from "./pages/signup.jsx";
-import DashboardPage from "./pages/dashboard.jsx";
+// import Landing from "./pages/Landing.jsx";
+// import LearnIAM from "./pages/LearnIAM.jsx";
+import Login from "./pages/login.jsx";
+import Signup from "./pages/signup.jsx";
+import Dashboard from "./pages/dashboard.jsx";
 
-// Temporary placeholder
-function LandingPage() {
-  return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
-      <h1>IAM Educational Project</h1>
-      <p>This is the landing page. More content will come later.</p>
-      <a href="/login">Go to Login →</a>
-    </div>
-  );
-}
-
-// Protected route wrapper
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) return <p>Loading...</p>;
-
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-
-  return children;
-}
-
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        {/* PUBLIC */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Landing />} />
+          <Route path="/learn" element={<LearnIAM />} />
+        </Route>
 
-        {/* Protected routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* AUTH */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Route>
 
-        {/* 404 fallback */}
+        {/* PROTECTED */}
         <Route
-          path="*"
           element={
-            <div style={{ padding: "40px" }}>
-              <h2>404 - Page Not Found</h2>
-              <a href="/">Go Home</a>
-            </div>
+            // <ProtectedRoute>
+              <AppLayout />
+            // </ProtectedRoute>
           }
-        />
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<div className="text-white p-10">404 Not Found</div>} />
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;
