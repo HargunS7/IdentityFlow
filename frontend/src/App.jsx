@@ -15,15 +15,12 @@ import Signup from "./pages/signup.jsx";
 import Dashboard from "./pages/dashboard.jsx";
 import Account from "./pages/accounts.jsx";
 
-
-// Temporary placeholders (we’ll build these next)
-
-const AdminHome = () => (
-  <div className="text-white">
-    <h1 className="text-3xl font-bold mb-2">Admin</h1>
-    <p className="text-white/70">Coming soon…</p>
-  </div>
-);
+// ✅ Admin pages
+import AdminHome from "./pages/admin/AdminHome.jsx";
+import AdminUsers from "./pages/admin/AdminUsers.jsx";
+import AdminSessions from "./pages/admin/AdminSessions.jsx";
+import AdminAuditLogs from "./pages/admin/AdminAuditLogs.jsx";
+import AdminTempAccess from "./pages/admin/AdminTempAccess.jsx";
 
 export default function App() {
   return (
@@ -52,12 +49,44 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/account" element={<Account />} />
 
-          {/* ADMIN AREA (placeholder for now) */}
+          {/* ✅ ADMIN AREA */}
           <Route
             path="/admin"
             element={
               <ProtectedRoute requireRoles={["admin"]}>
                 <AdminHome />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute requireRoles={["admin"]}>
+                <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/sessions"
+            element={
+              <ProtectedRoute requireRoles={["admin"]}>
+                <AdminSessions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <ProtectedRoute requireRoles={["admin"]}>
+                <AdminAuditLogs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/temp-access"
+            element={
+              <ProtectedRoute requireRoles={["admin"]}>
+                <AdminTempAccess />
               </ProtectedRoute>
             }
           />
