@@ -31,7 +31,6 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   const isAdmin = useMemo(() => {
-    // you can tighten/expand this logic later
     if (roles?.includes("admin")) return true;
     const combined = permissions?.combined || permissions || [];
     return combined.includes("USER_READ") || combined.includes("TEMP_GRANT");
@@ -47,15 +46,19 @@ export default function Navbar() {
   return (
     <div className="sticky top-0 z-50 w-full">
       <div className="mx-auto max-w-6xl px-4 pt-4">
-        {/* Glass navbar container */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-          <div className="flex items-center justify-between px-4 py-3">
+        {/* Glass navbar */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:bg-white/10">
+          <div className="flex items-center justify-between px-4 py-2">
             {/* Brand */}
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-400/60 to-fuchsia-500/50 border border-white/10" />
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-400/70 to-fuchsia-500/60" />
               <div className="leading-tight">
-                <div className="text-sm font-semibold text-white">IAM Playground</div>
-                <div className="text-xs text-white/60">Roles • Permissions • Audit</div>
+                <div className="text-sm font-semibold text-white">
+                  IAM Playground
+                </div>
+                <div className="text-xs text-white/60">
+                  Roles • Permissions • Audit
+                </div>
               </div>
             </div>
 
@@ -64,17 +67,7 @@ export default function Navbar() {
               <LinkItem to="/dashboard" label="Dashboard" />
               <LinkItem to="/learn" label="Learn IAM" />
               <LinkItem to="/account" label="Account" />
-
-              {isAdmin && (
-                <>
-                  <div className="mx-2 h-5 w-px bg-white/10" />
-                  <LinkItem to="/admin" label="Admin" />
-                  <LinkItem to="/admin/users" label="Users" />
-                  <LinkItem to="/admin/sessions" label="Sessions" />
-                  <LinkItem to="/admin/audit-logs" label="Audit Logs" />
-                  <LinkItem to="/admin/temp-access" label="Temp Access" />
-                </>
-              )}
+              {isAdmin && <LinkItem to="/admin" label="Admin" />}
             </div>
 
             {/* Right side */}
@@ -97,7 +90,7 @@ export default function Navbar() {
             {/* Mobile menu button */}
             <button
               onClick={() => setOpen((v) => !v)}
-              className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/10 border border-white/10 text-white"
+              className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg bg-white/10 border border-white/10 text-white"
               aria-label="Toggle menu"
             >
               <span className="text-lg">{open ? "✕" : "☰"}</span>
@@ -126,22 +119,8 @@ export default function Navbar() {
                     <LinkItem to="/dashboard" label="Dashboard" onClick={() => setOpen(false)} />
                     <LinkItem to="/learn" label="Learn IAM" onClick={() => setOpen(false)} />
                     <LinkItem to="/account" label="Account" onClick={() => setOpen(false)} />
+                    {isAdmin && <LinkItem to="/admin" label="Admin" onClick={() => setOpen(false)} />}
                   </div>
-
-                  {isAdmin && (
-                    <div className="mt-2 rounded-xl border border-white/10 bg-white/5 p-2">
-                      <div className="text-xs uppercase tracking-wider text-white/60 px-2 py-1">
-                        Admin
-                      </div>
-                      <div className="flex flex-col">
-                        <LinkItem to="/admin" label="Admin Home" onClick={() => setOpen(false)} />
-                        <LinkItem to="/admin/users" label="Users" onClick={() => setOpen(false)} />
-                        <LinkItem to="/admin/sessions" label="Sessions" onClick={() => setOpen(false)} />
-                        <LinkItem to="/admin/audit-logs" label="Audit Logs" onClick={() => setOpen(false)} />
-                        <LinkItem to="/admin/temp-access" label="Temp Access" onClick={() => setOpen(false)} />
-                      </div>
-                    </div>
-                  )}
 
                   <button
                     onClick={handleLogout}
