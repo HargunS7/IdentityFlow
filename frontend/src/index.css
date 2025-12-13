@@ -1,4 +1,39 @@
-:root {
+@import "tailwindcss";
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-[#06080f] text-white antialiased;
+    color-scheme: dark; /* helps browsers pick dark UI defaults */
+  }
+
+  /* ---- Chrome/Edge Autofill Fix (strong) ---- */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
+    caret-color: rgba(255, 255, 255, 0.92) !important;
+
+    /* Kill the browser's autofill background completely */
+    background-color: transparent !important;
+    background-image: none !important;
+
+    /* Paint our own “input bg” over it */
+    -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.06) inset !important;
+    box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.06) inset !important;
+
+    /* Prevent yellow flash */
+    transition: background-color 99999s ease-in-out 0s;
+  }
+}
+
+/* :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -65,4 +100,4 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
-}
+} */
