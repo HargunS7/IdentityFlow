@@ -2,25 +2,22 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import PublicLayout from "./layouts/PublicLayout.jsx";
-import AuthLayout from "./layouts/AuthLayout.jsx";
-import AppLayout from "./layouts/AppLayout.jsx";
+import PublicLayout from "./layouts/publicLayout.jsx";
+import AuthLayout from "./layouts/authLayout.jsx";
+import AppLayout from "./layouts/appLayout.jsx";
 
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedRoute from "./components/protectedRoutes.jsx";
 
-import Landing from "./pages/Landing.jsx";
-import LearnIAM from "./pages/LearnIAM.jsx";
+import Landing from "./pages/landing.jsx";
+import LearnIAM from "./pages/learnIAM.jsx";
 import Login from "./pages/login.jsx";
 import Signup from "./pages/signup.jsx";
 import Dashboard from "./pages/dashboard.jsx";
+import Account from "./pages/accounts.jsx";
+
 
 // Temporary placeholders (we’ll build these next)
-const Account = () => (
-  <div className="text-white">
-    <h1 className="text-3xl font-bold mb-2">Account</h1>
-    <p className="text-white/70">Coming soon…</p>
-  </div>
-);
+
 const AdminHome = () => (
   <div className="text-white">
     <h1 className="text-3xl font-bold mb-2">Admin</h1>
