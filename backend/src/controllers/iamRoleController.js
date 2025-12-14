@@ -2,8 +2,9 @@
 import prisma from "../PrismaClient.js";
 import { logAudit } from "../lib/logging.js";
 
+
 /**
- * POST /api/admin/assign-role
+ * PUT /api/admin/role
  * Permission: ROLE_ASSIGN
  * body: { userId: string, roleName: string }
  */
@@ -17,10 +18,13 @@ export const assignRole = async (req, res) => {
         .json({ error: "userId and roleName are required" });
     }
 
-    const role = await prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) return res.status(400).json({ error: "Role not found" });
+    const role = await prisma.role.findUnique({
+      where: { name: roleName },
+    });
+    if (!role) {
+      return res.status(400).json({ error: "Role not found" });
+    }
 
-    // Make sure target user exists (optional but nice)
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, email: true },
@@ -29,25 +33,30 @@ export const assignRole = async (req, res) => {
       return res.status(404).json({ error: "Target user not found" });
     }
 
-    try {
-      await prisma.userRole.create({
+    // 🔁 Replace role (enforce single role)
+    await prisma.$transaction([
+      prisma.userRole.deleteMany({
+        where: { userId },
+      }),
+      prisma.userRole.create({
         data: {
           userId,
           roleId: role.id,
         },
-      });
-    } catch (e) {
-      console.warn("assign-role: probably duplicate mapping", e.code);
-    }
+      }),
+    ]);
 
     // 🔐 Audit
-    logAudit(req.user.id, "ROLE_ASSIGN", req, {
+    await logAudit(req.user.id, "ROLE_ASSIGN", req, {
       targetUserId: userId,
       targetUserEmail: targetUser.email,
-      roleName,
+      newRole: roleName,
     });
 
-    res.json({ success: true });
+    return res.json({
+      success: true,
+      role: roleName,
+    });
   } catch (err) {
     console.error("ROLE_ASSIGN error:", err);
     return res.status(500).json({ error: "Failed to assign role" });
@@ -56,8 +65,8 @@ export const assignRole = async (req, res) => {
 
 
 /**
- * POST /api/admin/remove-role
- * Permission: ROLE_ASSIGN (you can later make a separate ROLE_REMOVE)
+ * PUT /api/admin/role/remove
+ * Permission: ROLE_ASSIGN
  * body: { userId: string, roleName: string }
  */
 export const removeRole = async (req, res) => {
@@ -70,12 +79,18 @@ export const removeRole = async (req, res) => {
         .json({ error: "userId and roleName are required" });
     }
 
-      if(roleName==='user'){
-        return res.status(400).json({error:"Cannot remove base role 'user'"});
-      }
+    if (roleName === "user") {
+      return res
+        .status(400)
+        .json({ error: "Base role 'user' cannot be removed" });
+    }
 
-    const role = await prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) return res.status(400).json({ error: "Role not found" });
+    const baseRole = await prisma.role.findUnique({
+      where: { name: "user" },
+    });
+    if (!baseRole) {
+      return res.status(500).json({ error: "Base role not found" });
+    }
 
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -85,24 +100,30 @@ export const removeRole = async (req, res) => {
       return res.status(404).json({ error: "Target user not found" });
     }
 
-    const result = await prisma.userRole.deleteMany({
-      where: {
-        userId,
-        roleId: role.id,
-      },
-    });
+    // 🔁 Reset role back to "user"
+    await prisma.$transaction([
+      prisma.userRole.deleteMany({
+        where: { userId },
+      }),
+      prisma.userRole.create({
+        data: {
+          userId,
+          roleId: baseRole.id,
+        },
+      }),
+    ]);
 
     // 🔐 Audit
-    logAudit(req.user.id, "ROLE_REMOVE", req, {
+    await logAudit(req.user.id, "ROLE_RESET", req, {
       targetUserId: userId,
       targetUserEmail: targetUser.email,
-      roleName,
-      removedCount: result.count,
+      previousRole: roleName,
+      newRole: "user",
     });
 
     return res.json({
       success: true,
-      removedCount: result.count,
+      role: "user",
     });
   } catch (err) {
     console.error("ROLE_REMOVE error:", err);

@@ -3,31 +3,58 @@ import { logAudit } from "../lib/logging.js";
 
 export const grantTemporaryPermission = async (req, res) => {
   try {
-    const { userId, permission, durationMinutes, reason } = req.body;
+    // accept either naming style
+    const {
+      userId: rawUserId,
+      identifier: rawIdentifier,
+      permission: rawPermission,
+      permissionCode: rawPermissionCode,
+      durationMinutes: rawDuration,
+      minutes: rawMinutes,
+      reason,
+    } = req.body;
 
-    // Validate inputs
+    const permission = rawPermission || rawPermissionCode;
+    const durationMinutes = Number(rawDuration ?? rawMinutes);
+
+    let userId = rawUserId;
+    const identifier = rawIdentifier ? String(rawIdentifier).trim() : null;
+
+    // Resolve userId from identifier if needed
+    if (!userId && identifier) {
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [{ email: identifier }, { username: identifier }],
+        },
+        select: { id: true },
+      });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      userId = user.id;
+    }
+
     if (!userId || !permission || !durationMinutes) {
-      return res.status(400).json({ error: "userId, permission, durationMinutes required" });
+      return res
+        .status(400)
+        .json({ error: "userId/identifier, permission, durationMinutes required" });
     }
-    if (permission === 'admin'){
-        return res.status(401).json({error: "cannot assign admin permission"});
-    }
+
     if (durationMinutes < 1 || durationMinutes > 30) {
       return res.status(400).json({ error: "durationMinutes must be between 1 and 30" });
     }
 
-    // Check target user exists
-    const user = await prisma.user.findUnique({
+    // (Optional) protect from nonsense "admin" string (permissions are codes, not roles)
+    if (String(permission).toLowerCase() === "admin") {
+      return res.status(400).json({ error: "cannot assign admin as a permission" });
+    }
+
+    const targetUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, email: true, username: true },
     });
+    if (!targetUser) return res.status(404).json({ error: "User not found" });
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const expiresAt = new Date(Date.now() + durationMinutes * 60_000);
 
-    // Compute expiration
-    const expiresAt = new Date(Date.now() + durationMinutes * 60000);
-
-    // Insert record
     const grant = await prisma.tempPermissionGrant.create({
       data: {
         userId,
@@ -38,19 +65,16 @@ export const grantTemporaryPermission = async (req, res) => {
       },
     });
 
-    // Audit log
     logAudit(req.user.id, "TEMP_PERMISSION_GRANT", req, {
       targetUserId: userId,
+      targetIdentifier: identifier,
       permission,
       durationMinutes,
       expiresAt,
-      reason,
+      reason: reason || null,
     });
 
-    return res.json({
-      success: true,
-      grant,
-    });
+    return res.json({ success: true, grant });
   } catch (err) {
     console.error("TEMP_GRANT error:", err);
     return res.status(500).json({ error: "Failed to grant temporary permission" });
@@ -116,8 +140,10 @@ export const listTemporaryPermissions = async (req, res) => {
         expiresAt: true,
         createdAt: true,
         grantedById: true,
+        user: { select: { id: true, email: true, username: true } },
       },
     });
+
 
     return res.json({
       grants,

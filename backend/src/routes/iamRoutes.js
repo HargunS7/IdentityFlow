@@ -93,7 +93,7 @@ router.get(
 
 
 
-router.post(
+router.put(
   "/admin/assign-role",
   auth(true),
   requirePerms("ROLE_ASSIGN"),
@@ -102,7 +102,7 @@ router.post(
 
 // DELETE /api/admin/remove-role
 // body: { userId, roleName }
-router.delete(
+router.put(
   "/admin/remove-role",
   auth(true),
   requireRoles("admin"),
