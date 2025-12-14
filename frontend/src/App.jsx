@@ -15,7 +15,7 @@ import Signup from "./pages/signup.jsx";
 import Dashboard from "./pages/dashboard.jsx";
 import Account from "./pages/accounts.jsx";
 
-// Admin pages
+// Admin / Console pages
 import AdminHome from "./pages/admin/AdminHome.jsx";
 import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminSessions from "./pages/admin/AdminSessions.jsx";
@@ -49,15 +49,18 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/account" element={<Account />} />
 
-          {/* ADMIN / CONSOLE AREA (permission-gated) */}
+          {/* =======================
+              CONSOLE (permission-based)
+              ======================= */}
 
-          {/* Console home: allow anyone with at least one console-relevant permission */}
+          {/* Console Home
+              Visible if user has ANY console-capable permission
+              (including temporary grants) */}
           <Route
             path="/admin"
             element={
               <ProtectedRoute
-                requireAnyPerms={[
-                  "ADMIN",
+                requireAnyPerm={[
                   "ROLE_ASSIGN",
                   "USER_READ",
                   "USER_UPDATE",
@@ -79,8 +82,7 @@ export default function App() {
             path="/admin/users"
             element={
               <ProtectedRoute
-                requireAnyPerms={[
-                  "ADMIN",
+                requireAnyPerm={[
                   "ROLE_ASSIGN",
                   "USER_READ",
                   "USER_UPDATE",
@@ -98,7 +100,10 @@ export default function App() {
             path="/admin/sessions"
             element={
               <ProtectedRoute
-                requireAnyPerms={["ADMIN", "SESSION_READ", "SESSION_REVOKE"]}
+                requireAnyPerm={[
+                  "SESSION_READ",
+                  "SESSION_REVOKE",
+                ]}
               >
                 <AdminSessions />
               </ProtectedRoute>
@@ -109,17 +114,17 @@ export default function App() {
           <Route
             path="/admin/audit-logs"
             element={
-              <ProtectedRoute requireAnyPerms={["ADMIN", "AUDIT_READ"]}>
+              <ProtectedRoute requireAnyPerm={["AUDIT_READ"]}>
                 <AdminAuditLogs />
               </ProtectedRoute>
             }
           />
 
-          {/* Temp Access */}
+          {/* Temporary Access (JIT) */}
           <Route
             path="/admin/temp-access"
             element={
-              <ProtectedRoute requireAnyPerms={["ADMIN", "TEMP_GRANT"]}>
+              <ProtectedRoute requireAnyPerm={["TEMP_GRANT"]}>
                 <AdminTempAccess />
               </ProtectedRoute>
             }
