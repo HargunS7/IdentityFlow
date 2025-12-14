@@ -132,7 +132,7 @@ export default function AdminSessions() {
   }
 
   return (
-    <AdminGate>
+    // <AdminGate>
       <AnimatedWrapper>
         <div className="space-y-5">
           {/* Header */}
@@ -316,6 +316,6 @@ export default function AdminSessions() {
           )}
         </div>
       </AnimatedWrapper>
-    </AdminGate>
+    // </AdminGate>
   );
 }

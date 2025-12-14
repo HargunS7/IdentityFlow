@@ -9,45 +9,56 @@ const fadeUp = {
   show: { opacity: 1, y: 0 },
 };
 
+function hasAny(perms, needed) {
+  return needed.some((p) => perms.includes(p));
+}
+
 export default function AdminHome() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const { user, roles, permissions } = useAuth();
 
-const username = user?.username || user?.email || "admin";
-const safeRoles = Array.isArray(roles) ? roles : [];
-const perms = Array.isArray(permissions?.combined) ? permissions.combined : [];
-
+  const username = user?.username || user?.email || "user";
+  const roleList = Array.isArray(roles) ? roles : [];
+  const perms = Array.isArray(permissions?.combined) ? permissions.combined : [];
 
   const topPerms = perms.slice(0, 8);
   const remaining = Math.max(perms.length - topPerms.length, 0);
 
+  const isFullAdmin = roleList.includes("admin") || perms.includes("ADMIN");
+
   const modules = [
     {
       title: "Users & Roles",
-      desc: "Search users, assign roles, and validate RBAC outcomes.",
+      desc: "Search users, view access, and (if allowed) assign roles to validate RBAC outcomes.",
       to: "/admin/users",
-      badge: "ROLE_ASSIGN",
+      badge: "USER_READ / ROLE_ASSIGN",
+      show: hasAny(perms, ["ADMIN", "USER_READ", "USER_UPDATE", "USER_CREATE", "USER_DELETE", "ROLE_ASSIGN"]),
     },
     {
       title: "Sessions",
       desc: "Investigate active sessions and revoke access when needed.",
       to: "/admin/sessions",
-      badge: "SESSION_REVOKE",
+      badge: "SESSION_READ / SESSION_REVOKE",
+      show: hasAny(perms, ["ADMIN", "SESSION_READ", "SESSION_REVOKE"]),
     },
     {
       title: "Audit Logs",
       desc: "Trace sensitive actions for security review and compliance.",
       to: "/admin/audit-logs",
       badge: "AUDIT_READ",
+      show: hasAny(perms, ["ADMIN", "AUDIT_READ"]),
     },
     {
       title: "Temporary Access (JIT)",
       desc: "Grant time-bound permissions and let them expire automatically.",
       to: "/admin/temp-access",
       badge: "TEMP_GRANT",
+      show: hasAny(perms, ["ADMIN", "TEMP_GRANT"]),
     },
   ];
+
+  const visibleModules = modules.filter((m) => m.show);
 
   return (
     <motion.div
@@ -63,30 +74,38 @@ const perms = Array.isArray(permissions?.combined) ? permissions.combined : [];
       >
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
           <div>
-            {/* <div className="text-xs uppercase tracking-wider text-white/60">
+            <div className="text-xs uppercase tracking-wider text-white/60">
               Console Home
-            </div> */}
+            </div>
+
             <h1 className="mt-2 text-3xl md:text-4xl font-semibold text-white">
-                Console Home
+              {isFullAdmin ? "Admin Console" : "Security Console"}
             </h1>
+
             <p className="mt-2 max-w-2xl text-white/70">
-              You’re logged in as <span className="text-white">{username}</span>. Admin access
-              lets you manage users, roles, sessions, audits, and temporary permissions — like a real
-              security console.
+              You’re logged in as <span className="text-white">{username}</span>.{" "}
+              {isFullAdmin ? (
+                <>Admin access lets you manage users, roles, sessions, audits, and temporary permissions — like a real security console.</>
+              ) : (
+                <>You have limited console access based on your current permissions (including any temporary JIT grants).</>
+              )}
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2">
+              {visibleModules[0]?.to ? (
+                <button
+                  onClick={() => navigate(visibleModules[0].to)}
+                  className="rounded-2xl px-4 py-2.5 text-sm font-semibold text-black bg-white hover:bg-white/90 transition shadow"
+                >
+                  Open {visibleModules[0].title}
+                </button>
+              ) : null}
+
               <button
-                onClick={() => navigate("/admin/users")}
-                className="rounded-2xl px-4 py-2.5 text-sm font-semibold text-black bg-white hover:bg-white/90 transition shadow"
-              >
-                Manage Users
-              </button>
-              <button
-                onClick={() => navigate("/admin/audit-logs")}
+                onClick={() => navigate("/dashboard")}
                 className="rounded-2xl px-4 py-2.5 text-sm font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
               >
-                View Audit Logs
+                Back to Dashboard
               </button>
             </div>
           </div>
@@ -103,8 +122,8 @@ const perms = Array.isArray(permissions?.combined) ? permissions.combined : [];
             <div className="mt-3">
               <div className="text-xs text-white/60">Roles</div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {safeRoles.length ? (
-                  safeRoles.map((r) => (
+                {roleList.length ? (
+                  roleList.map((r) => (
                     <span
                       key={r}
                       className="text-xs px-2 py-1 rounded-full bg-white/10 border border-white/10 text-white/80"
@@ -151,7 +170,7 @@ const perms = Array.isArray(permissions?.combined) ? permissions.combined : [];
       {/* What you can do */}
       <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <InfoBlock
-          title="What admins do in real systems"
+          title="What privileged users do in real systems"
           points={[
             "Enforce least privilege (don’t give more access than needed).",
             "Investigate incidents using audit trails.",
@@ -173,7 +192,7 @@ const perms = Array.isArray(permissions?.combined) ? permissions.combined : [];
 
       {/* Modules */}
       <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {modules.map((m) => (
+        {visibleModules.map((m) => (
           <ModuleCard
             key={m.to}
             title={m.title}
@@ -191,8 +210,8 @@ const perms = Array.isArray(permissions?.combined) ? permissions.combined : [];
       >
         <div className="text-sm font-semibold text-white">Security tip</div>
         <p className="mt-2 text-sm text-white/70 leading-relaxed">
-          If you’re testing: create a user, assign a role, then re-open the dashboard and verify the
-          effective permissions change. That’s the core RBAC loop.
+          Try this loop: grant a temporary permission (JIT), refresh your profile, then verify the console
+          unlocks only the modules you’re allowed to use. That’s IAM in action.
         </p>
       </motion.div>
     </motion.div>

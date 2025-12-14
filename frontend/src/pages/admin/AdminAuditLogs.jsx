@@ -107,7 +107,7 @@ export default function AdminAuditLogs() {
     }
 
     return (
-        <AdminGate>
+        // <AdminGate>
             <AnimatedWrapper>
                 <div className="space-y-5">
                     {/* Header */}
@@ -274,6 +274,6 @@ export default function AdminAuditLogs() {
                     )}
                 </div>
             </AnimatedWrapper>
-        </AdminGate>
+        // </AdminGate>
     );
 }
