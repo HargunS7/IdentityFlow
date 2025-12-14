@@ -27,7 +27,7 @@ export default function AdminUsers() {
   const [selectedAssignByUser, setSelectedAssignByUser] = useState({});
   const [selectedRemoveByUser, setSelectedRemoveByUser] = useState({});
 
-  const canReadUsers = hasPerm(permissions, "USER_READ") || hasPerm(permissions, "ADMIN");
+  const canReadUsers =  hasPerm(permissions, "ADMIN");
   const canAssign = hasPerm(permissions, "ROLE_ASSIGN");
   const canDelete = hasPerm(permissions, "USER_DELETE");
 
