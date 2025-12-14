@@ -31,22 +31,28 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const combined = permissions?.combined || [];
+  const combined = Array.isArray(permissions?.combined) ? permissions.combined : [];
   const hasPerm = (p) => combined.includes(p);
 
   // Decide what this user can see
   const consoleLinks = useMemo(() => {
-    const canUsers = hasPerm("USER_READ") || hasPerm("USER_UPDATE") || hasPerm("USER_CREATE") || hasPerm("USER_DELETE") || hasPerm("ROLE_ASSIGN") || hasPerm("ADMIN");
-    const canSessions = hasPerm("SESSION_READ") || hasPerm("SESSION_REVOKE") || hasPerm("ADMIN");
-    const canAudit = hasPerm("AUDIT_READ") || hasPerm("ADMIN");
-    const canTemp = hasPerm("TEMP_GRANT") || hasPerm("ADMIN");
+    // Console should only show for "privileged console permissions"
+    // IMPORTANT: DO NOT include plain USER_READ here (regular users have it)
+    const canUsers =
+      hasPerm("ADMIN") ||
+      hasPerm("ROLE_ASSIGN") ||
+      hasPerm("USER_UPDATE") ||
+      hasPerm("USER_CREATE") ||
+      hasPerm("USER_DELETE");
+
+    const canSessions = hasPerm("ADMIN") || hasPerm("SESSION_READ") || hasPerm("SESSION_REVOKE");
+    const canAudit = hasPerm("ADMIN") || hasPerm("AUDIT_READ");
+    const canTemp = hasPerm("ADMIN") || hasPerm("TEMP_GRANT");
 
     const items = [];
 
-    // only show console if user has ANY privileged permission
-    const hasAnyConsole =
-      canUsers || canSessions || canAudit || canTemp;
-
+    // only show console if user has ANY privileged console permission
+    const hasAnyConsole = canUsers || canSessions || canAudit || canTemp;
     if (!hasAnyConsole) return [];
 
     // Overview always first if console exists
@@ -58,7 +64,7 @@ export default function Navbar() {
     if (canTemp) items.push({ to: "/admin/temp-access", label: "Temp Access" });
 
     return items;
-  }, [permissions]);
+  }, [combined]);
 
   const showConsole = consoleLinks.length > 0;
 
@@ -79,7 +85,7 @@ export default function Navbar() {
             <Link to="/dashboard" className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-400/70 to-fuchsia-400/70 border border-white/10" />
               <div className="leading-tight">
-                <div className="text-white font-semibold">IAM Playground</div>
+                <div className="text-white font-semibold">IdentityFlow</div>
                 <div className="text-xs text-white/60">Roles • Permissions • Audit</div>
               </div>
             </Link>
@@ -112,7 +118,9 @@ export default function Navbar() {
                     type="button"
                   >
                     Console
-                    <span className={cx("text-white/50 transition", openConsole ? "rotate-180" : "")}>▾</span>
+                    <span className={cx("text-white/50 transition", openConsole ? "rotate-180" : "")}>
+                      ▾
+                    </span>
                   </button>
 
                   <AnimatePresence>
