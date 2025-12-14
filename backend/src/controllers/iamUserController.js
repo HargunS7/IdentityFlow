@@ -42,16 +42,35 @@ export const getMe = (req, res) => {
  */
 export const listUsers = async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
+     const users = await prisma.user.findMany({
       select: {
         id: true,
         email: true,
         username: true,
         mfaEnabled: true,
         createdAt: true,
+        roles: {
+          // User.roles -> UserRole[]
+          select: {
+            role: { select: { name: true } },
+          },
+        },
       },
+      orderBy: { createdAt: "desc" },
+      take: 200,
     });
-    return res.json(users);
+
+    // ✅ convert nested relation into string[]
+    const shaped = users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      username: u.username,
+      mfaEnabled: u.mfaEnabled,
+      createdAt: u.createdAt,
+      roles: (u.roles || []).map((ur) => ur.role?.name).filter(Boolean),
+    }));
+
+    return res.json({ users: shaped });
   } catch (err) {
     console.error("listUsers error:", err);
     return res.status(500).json({ error: "Failed to list users" });

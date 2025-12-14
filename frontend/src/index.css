@@ -31,6 +31,15 @@
     /* Prevent yellow flash */
     transition: background-color 99999s ease-in-out 0s;
   }
+
+  /* index.css */
+.btn {
+  @apply rounded-xl px-3 py-2 text-xs font-semibold bg-white/10 hover:bg-white/15 border border-white/10 text-white;
+}
+.btn-danger {
+  @apply rounded-xl px-3 py-2 text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-200;
+}
+
 }
 
 /* :root {

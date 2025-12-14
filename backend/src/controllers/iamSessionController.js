@@ -12,31 +12,36 @@ import { logAudit } from "../lib/logging.js";
  */
 export const listSessions = async (req, res) => {
   try {
-    const { identifier } = req.query;
-    const limit = Math.min(
-      parseInt(req.query.limit ?? "100", 10) || 100,
-      500
-    );
+    const identifier = req.query.identifier ? String(req.query.identifier) : null;
 
-    let where = {};
+    const limit = Math.min(parseInt(req.query.limit ?? "30", 10) || 30, 200);
 
-    // If identifier provided, resolve user first
+    // status: active (default), inactive, all
+    const status = String(req.query.status ?? "active");
+    const cursor = req.query.cursor ? String(req.query.cursor) : null;
+
+    const where = {};
+
+    // Filter by status
+    if (status === "active") where.active = true;
+    else if (status === "inactive") where.active = false;
+    // else "all" => no active filter
+
+    // Resolve user by email/username if identifier is provided
     if (identifier) {
       const user = await prisma.user.findFirst({
         where: {
-          OR: [
-            { email: String(identifier) },
-            { username: String(identifier) },
-          ],
+          OR: [{ email: identifier }, { username: identifier }],
         },
-        select: { id: true, email: true, username: true },
+        select: { id: true },
       });
 
       if (!user) {
-        // No such user → no sessions
         return res.json({
           sessions: [],
-          filter: { identifier },
+          filter: { identifier, status, limit },
+          nextCursor: null,
+          hasMore: false,
         });
       }
 
@@ -46,7 +51,13 @@ export const listSessions = async (req, res) => {
     const sessions = await prisma.session.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: limit,
+      take: limit + 1, // fetch one extra to know if there's more
+      ...(cursor
+        ? {
+            cursor: { id: cursor },
+            skip: 1, // skip the cursor itself
+          }
+        : {}),
       select: {
         id: true,
         userId: true,
@@ -56,18 +67,21 @@ export const listSessions = async (req, res) => {
         active: true,
         createdAt: true,
         expiresAt: true,
+        user: {
+          select: { id: true, email: true, username: true },
+        },
       },
     });
 
-    // Optional audit
-    // logAudit(req.user.id, "SESSION_LIST", req, {
-    //   filter: { identifier: identifier || null, limit },
-    //   resultCount: sessions.length,
-    // });
+    const hasMore = sessions.length > limit;
+    const pageItems = hasMore ? sessions.slice(0, limit) : sessions;
+    const nextCursor = hasMore ? pageItems[pageItems.length - 1]?.id : null;
 
     return res.json({
-      sessions,
-      filter: { identifier: identifier || null, limit },
+      sessions: pageItems,
+      filter: { identifier, status, limit },
+      nextCursor,
+      hasMore,
     });
   } catch (err) {
     console.error("SESSION_READ error:", err);
