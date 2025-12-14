@@ -39,7 +39,7 @@ export async function userLookup(query) {
 /* -------------------------------------------------------------------------- */
 
 export async function assignRole(userId, roleName) {
-  const res = await api.post("/api/admin/assign-role", {
+  const res = await api.put("/api/admin/assign-role", {
     userId,
     roleName,
   });
@@ -47,8 +47,9 @@ export async function assignRole(userId, roleName) {
 }
 
 export async function removeRole(userId, roleName) {
-  const res = await api.delete("/api/admin/remove-role", {
-    data: { userId, roleName },
+  const res = await api.put("/api/admin/remove-role", {
+     userId, 
+     roleName,
   });
   return res.data;
 }

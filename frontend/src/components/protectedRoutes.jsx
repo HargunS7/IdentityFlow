@@ -1,70 +1,49 @@
-// src/components/ProtectedRoute.jsx
+// src/components/protectedRoutes.jsx
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
+/**
+ * Supports:
+ * - requireRoles: user must have ANY of these roles
+ * - requirePerms: user must have ALL of these perms
+ * - requireAnyPerms: user must have ANY of these perms
+ */
 export default function ProtectedRoute({
   children,
-  requireRoles = [],
-  requirePerms = [],
+  requireRoles,
+  requirePerms,
+  requireAnyPerms,
 }) {
-  const { isAuthenticated, loading, roles, permissions } = useAuth();
+  const { user, roles, permissions, loading } = useAuth();
+  const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-6 py-4">
-          <p className="text-sm text-white/80">Checking session...</p>
-        </div>
-      </div>
-    );
+  if (loading) return null;
+
+  // Not logged in
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  const userRoles = roles || [];
+  const combinedPerms = permissions?.combined || [];
+
+  // Role gate (ANY match)
+  if (Array.isArray(requireRoles) && requireRoles.length > 0) {
+    const ok = requireRoles.some((r) => userRoles.includes(r));
+    if (!ok) return <Navigate to="/dashboard" replace />;
   }
 
-  const roleList = roles || [];
-  const permList = permissions?.combined || permissions || [];
-
-  if (requireRoles.length > 0) {
-    const hasRole = requireRoles.some((r) => roleList.includes(r));
-    if (!hasRole) {
-      return (
-        <div className="min-h-screen flex items-center justify-center text-white px-4">
-          <div className="max-w-lg w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
-            <h1 className="text-xl font-semibold mb-2">Access denied</h1>
-            <p className="text-white/70 text-sm mb-4">
-              You don’t have the required role(s) to view this page.
-            </p>
-            <div className="text-xs text-white/60">
-              Required roles:{" "}
-              <span className="text-white/80">{requireRoles.join(", ")}</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
+  // Permission gate (ALL required)
+  if (Array.isArray(requirePerms) && requirePerms.length > 0) {
+    const ok = requirePerms.every((p) => combinedPerms.includes(p));
+    if (!ok) return <Navigate to="/dashboard" replace />;
   }
 
-  if (requirePerms.length > 0) {
-    const hasAllPerms = requirePerms.every((p) => permList.includes(p));
-    if (!hasAllPerms) {
-      return (
-        <div className="min-h-screen flex items-center justify-center text-white px-4">
-          <div className="max-w-lg w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
-            <h1 className="text-xl font-semibold mb-2">Access denied</h1>
-            <p className="text-white/70 text-sm mb-4">
-              You don’t have the required permission(s) to view this page.
-            </p>
-            <div className="text-xs text-white/60">
-              Required permissions:{" "}
-              <span className="text-white/80">{requirePerms.join(", ")}</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
+  // Permission gate (ANY required)
+  if (Array.isArray(requireAnyPerms) && requireAnyPerms.length > 0) {
+    const ok = requireAnyPerms.some((p) => combinedPerms.includes(p));
+    if (!ok) return <Navigate to="/dashboard" replace />;
   }
 
   return children;

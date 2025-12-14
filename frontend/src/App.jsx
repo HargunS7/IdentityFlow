@@ -15,7 +15,7 @@ import Signup from "./pages/signup.jsx";
 import Dashboard from "./pages/dashboard.jsx";
 import Account from "./pages/accounts.jsx";
 
-// ✅ Admin pages
+// Admin pages
 import AdminHome from "./pages/admin/AdminHome.jsx";
 import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminSessions from "./pages/admin/AdminSessions.jsx";
@@ -49,43 +49,77 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/account" element={<Account />} />
 
-          {/* ✅ ADMIN AREA */}
+          {/* ADMIN / CONSOLE AREA (permission-gated) */}
+
+          {/* Console home: allow anyone with at least one console-relevant permission */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute requireRoles={["admin"]}>
+              <ProtectedRoute
+                requireAnyPerms={[
+                  "ADMIN",
+                  "ROLE_ASSIGN",
+                  "USER_READ",
+                  "USER_UPDATE",
+                  "USER_CREATE",
+                  "USER_DELETE",
+                  "SESSION_READ",
+                  "SESSION_REVOKE",
+                  "AUDIT_READ",
+                  "TEMP_GRANT",
+                ]}
+              >
                 <AdminHome />
               </ProtectedRoute>
             }
           />
+
+          {/* Users & Roles */}
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute requireRoles={["admin"]}>
+              <ProtectedRoute
+                requireAnyPerms={[
+                  "ADMIN",
+                  "ROLE_ASSIGN",
+                  "USER_READ",
+                  "USER_UPDATE",
+                  "USER_CREATE",
+                  "USER_DELETE",
+                ]}
+              >
                 <AdminUsers />
               </ProtectedRoute>
             }
           />
+
+          {/* Sessions */}
           <Route
             path="/admin/sessions"
             element={
-              <ProtectedRoute requireRoles={["admin"]}>
+              <ProtectedRoute
+                requireAnyPerms={["ADMIN", "SESSION_READ", "SESSION_REVOKE"]}
+              >
                 <AdminSessions />
               </ProtectedRoute>
             }
           />
+
+          {/* Audit Logs */}
           <Route
             path="/admin/audit-logs"
             element={
-              <ProtectedRoute requireRoles={["admin"]}>
+              <ProtectedRoute requireAnyPerms={["ADMIN", "AUDIT_READ"]}>
                 <AdminAuditLogs />
               </ProtectedRoute>
             }
           />
+
+          {/* Temp Access */}
           <Route
             path="/admin/temp-access"
             element={
-              <ProtectedRoute requireRoles={["admin"]}>
+              <ProtectedRoute requireAnyPerms={["ADMIN", "TEMP_GRANT"]}>
                 <AdminTempAccess />
               </ProtectedRoute>
             }
