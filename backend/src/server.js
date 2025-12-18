@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 
 import iamRoutes from "./routes/iamRoutes.js";
+import { getClientIp } from "./lib/ip.js";
 
 const app = express();
 
@@ -70,6 +71,16 @@ const authLimiter = rateLimit({
 
 app.use("/api/auth", authLimiter, authRouter);  // mounts /signup and /login
 app.use("/api",iamRoutes); // mounting iamRoutes to check rbac
+
+
+app.get("/debug/ip", (req, res) => {
+  res.json({
+    reqIp: req.ip,
+    xff: req.headers["x-forwarded-for"] || null,
+    realIp: req.headers["x-real-ip"] || null,
+    computed: getClientIp(req),
+  });
+});
 
 
 
