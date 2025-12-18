@@ -39,8 +39,7 @@
     npx prisma migrate dev
     
     
-    (Optional) Run the seed script to insert roles, permissions, and a default admin:
-    
+    (DO NOT RUN THIS COMMAND) Run the seed script to insert roles, permissions, and a default admin:
     npx prisma db seed
 
 # 6. Run the Servers:-
