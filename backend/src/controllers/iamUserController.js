@@ -375,3 +375,87 @@ export const userLookup = async (req, res) => {
   }
    
   };
+
+
+  /**
+ * PATCH /api/me
+ * Any logged-in user can update their own username
+ * body: { username: string | null }
+ */
+export const updateMe = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { username } = req.body;
+
+    // Only allow username updates here (keep it tight)
+    if (username === undefined) {
+      return res.status(400).json({ error: "username is required" });
+    }
+
+    // Allow clearing username if you want; if not, remove this block
+    if (username === null || username === "") {
+      const before = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true },
+      });
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { username: null },
+        select: { id: true, email: true, username: true, mfaEnabled: true, createdAt: true },
+      });
+
+      await logAudit(userId, "USER_SELF_UPDATE", req, {
+        entity: { type: "User", id: userId },
+        changes: { username: { from: before?.username ?? null, to: null } },
+      });
+
+      return res.json({ message: "Profile updated", user: updated });
+    }
+
+    // Validate format
+    const usernameCheck = validateUsernameFormat(username);
+    if (!usernameCheck.valid) {
+      return res.status(400).json({ error: usernameCheck.reason });
+    }
+
+    // Check uniqueness (excluding self)
+    const existing = await prisma.user.findFirst({
+      where: { username, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (existing) {
+      return res.status(409).json({ error: "Username already taken" });
+    }
+
+    // Fetch before for audit diff
+    const before = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
+
+    // Update
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { username },
+      select: { id: true, email: true, username: true, mfaEnabled: true, createdAt: true },
+    });
+
+    // Audit (dynamic meta)
+    await logAudit(userId, "USER_SELF_UPDATE", req, {
+      entity: { type: "User", id: userId },
+      changes: { username: { from: before?.username ?? null, to: updated.username } },
+    });
+
+    return res.json({ message: "Profile updated", user: updated });
+  } catch (err) {
+    console.error("updateMe error:", err);
+
+    // Prisma unique constraint safety net (if db unique triggers)
+    if (err?.code === "P2002") {
+      return res.status(409).json({ error: "Username already taken" });
+    }
+
+    return res.status(500).json({ error: "Failed to update profile" });
+  }
+};

@@ -1,9 +1,10 @@
 // src/pages/Account.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AnimatedWrapper from "../components/animatedWrapper.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { updateMe } from "../services/adminService.js";
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -16,17 +17,20 @@ function formatDate(iso) {
 
 export default function Account() {
   const navigate = useNavigate();
-  const {
-    user,
-    roles,
-    permissions,
-    tempGrants,
-    logout,
-    refreshProfile,
-  } = useAuth();
+  const { user, roles, permissions, tempGrants, logout, refreshProfile } =
+    useAuth();
 
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState("");
+
+  // Username edit state
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState(user?.username || "");
+  const [savingUsername, setSavingUsername] = useState(false);
+
+  useEffect(() => {
+    setUsernameInput(user?.username || "");
+  }, [user?.username]);
 
   const roleList = roles || [];
   const permCombined = permissions?.combined || [];
@@ -55,6 +59,35 @@ export default function Account() {
   async function handleLogout() {
     await logout();
     navigate("/login");
+  }
+
+  async function handleSaveUsername() {
+    setToast("");
+    setSavingUsername(true);
+    try {
+      const next = usernameInput.trim();
+
+      if (!next) {
+        setToast("Username cannot be empty ❌");
+        setTimeout(() => setToast(""), 2500);
+        return;
+      }
+
+      await updateMe({ username: next });
+      await refreshProfile();
+
+      setToast("Username updated ✅");
+      setEditingUsername(false);
+      setTimeout(() => setToast(""), 2500);
+    } catch (e) {
+      console.error(e);
+      const msg =
+        e?.response?.data?.error || e?.message || "Update failed ❌";
+      setToast(msg);
+      setTimeout(() => setToast(""), 3000);
+    } finally {
+      setSavingUsername(false);
+    }
   }
 
   return (
@@ -100,7 +133,63 @@ export default function Account() {
           <Card title="Identity" subtitle="Account & basic attributes">
             <div className="space-y-3">
               <Row label="Email" value={user?.email || "—"} />
-              <Row label="Username" value={user?.username || "—"} />
+
+              {/* Username row */}
+<div className="space-y-2">
+  <div className="flex items-center justify-between gap-3">
+    <div className="text-sm text-white/60">Username</div>
+
+    {!editingUsername ? (
+      <div className="flex items-center gap-2">
+        <div className="text-sm text-white">{user?.username || "—"}</div>
+        <button
+          onClick={() => setEditingUsername(true)}
+          className="rounded-xl px-3 py-1 text-xs font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
+        >
+          Edit
+        </button>
+      </div>
+    ) : (
+      <button
+        onClick={() => {
+          setUsernameInput(user?.username || "");
+          setEditingUsername(false);
+        }}
+        className="rounded-xl px-3 py-1 text-xs font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
+      >
+        Close
+      </button>
+    )}
+  </div>
+
+  {editingUsername && (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <input
+          value={usernameInput}
+          onChange={(e) => setUsernameInput(e.target.value)}
+          className="w-full sm:w-56 rounded-xl px-3 py-2 text-sm text-white bg-black/30 border border-white/10 outline-none focus:border-white/25 transition"
+          placeholder="Enter username"
+          maxLength={32}
+          autoFocus
+        />
+
+        <button
+          onClick={handleSaveUsername}
+          disabled={savingUsername}
+          className="rounded-xl px-4 py-2 text-xs font-semibold text-black bg-white hover:bg-white/90 transition shadow disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {savingUsername ? "Saving..." : "Save"}
+        </button>
+      </div>
+
+      <div className="mt-2 text-xs text-white/50">
+        Tip: letters, numbers, and underscore only.
+      </div>
+    </div>
+  )}
+</div>
+
               <Row label="User ID" value={<Mono>{user?.id || "—"}</Mono>} />
               <Row label="Created" value={formatDate(user?.createdAt)} />
             </div>
@@ -141,7 +230,8 @@ export default function Account() {
                   MFA setup
                 </div>
                 <p className="mt-2 text-sm text-white/70">
-                  We’ll wire MFA setup when the backend flow is ready. For now, this page shows your MFA flag from /api/me.
+                  We’ll wire MFA setup when the backend flow is ready. For now,
+                  this page shows your MFA flag from /api/me.
                 </p>
 
                 <button
@@ -153,7 +243,8 @@ export default function Account() {
               </div>
 
               <div className="text-xs text-white/60">
-                Tip: Use temporary access for high-risk tasks instead of permanent privileges.
+                Tip: Use temporary access for high-risk tasks instead of
+                permanent privileges.
               </div>
             </div>
           </Card>
@@ -193,7 +284,9 @@ export default function Account() {
               </div>
 
               <div className="mt-3 text-sm text-white/70">
-                Your effective access is <span className="text-white">Combined</span> permissions (permanent + temporary).
+                Your effective access is{" "}
+                <span className="text-white">Combined</span> permissions
+                (permanent + temporary).
               </div>
             </div>
           </Card>
@@ -218,7 +311,10 @@ export default function Account() {
                       {g.permission || g.permissionCode || "TEMP_PERMISSION"}
                     </div>
                     <div className="mt-1 text-xs text-white/60">
-                      Expires: <span className="text-white/70">{formatDate(g.expiresAt)}</span>
+                      Expires:{" "}
+                      <span className="text-white/70">
+                        {formatDate(g.expiresAt)}
+                      </span>
                     </div>
                     {g.reason && (
                       <div className="mt-2 text-sm text-white/70">
@@ -228,7 +324,10 @@ export default function Account() {
                   </div>
 
                   <div className="text-xs text-white/60">
-                    Granted: <span className="text-white/70">{formatDate(g.createdAt)}</span>
+                    Granted:{" "}
+                    <span className="text-white/70">
+                      {formatDate(g.createdAt)}
+                    </span>
                   </div>
                 </motion.div>
               ))}
@@ -280,7 +379,9 @@ function Badge({ children, variant = "neutral" }) {
       : "bg-white/10 border-white/10 text-white/70";
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold ${styles}`}>
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold ${styles}`}
+    >
       {children}
     </span>
   );

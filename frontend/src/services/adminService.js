@@ -25,6 +25,12 @@ export async function deleteUser(userId) {
   return res.data;
 }
 
+// Self-service: update your own profile (username for now)
+export async function updateMe(payload) {
+  const res = await api.patch("/api/me", payload);
+  return res.data;
+}
+
 export async function userLookup(query) {
   const res = await api.get("/api/users/lookup", {
     params: query.includes("@")

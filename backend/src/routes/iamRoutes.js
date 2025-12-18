@@ -9,7 +9,8 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  userLookup
+  userLookup,
+  updateMe
 } from "../controllers/iamUserController.js";
 
 import { assignRole,removeRole } from "../controllers/iamRoleController.js";
@@ -84,6 +85,18 @@ router.get(
   
   userLookup
 );
+
+
+/**
+ * PATCH /api/me
+ * Any logged-in user can update their own username
+ */
+router.patch(
+  "/me",
+  auth(true),
+  updateMe
+);
+
 
 
 
