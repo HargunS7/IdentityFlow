@@ -405,7 +405,7 @@ export const updateMe = async (req, res) => {
         select: { id: true, email: true, username: true, mfaEnabled: true, createdAt: true },
       });
 
-      await logAudit(userId, "USER_SELF_UPDATE", req, {
+      await logAudit(userId, "SELF_UPDATE", req, {
         entity: { type: "User", id: userId },
         changes: { username: { from: before?.username ?? null, to: null } },
       });
