@@ -136,8 +136,8 @@ export default function App() {
           element={
             <div className="min-h-screen bg-[#0b0f19] text-white flex items-center justify-center">
               <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-6 py-4">
-                <h2 className="text-lg font-semibold">404</h2>
-                <p className="text-white/70 text-sm">Page not found</p>
+                <h2 className="text-lg font-semibold">Coming Soon...</h2>
+                {/* <p className="text-white/70 text-sm">Page not found</p> */}
               </div>
             </div>
           }

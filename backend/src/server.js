@@ -3,7 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
-import authRouter from "./routes/auth.js";   // ✅ make sure path is correct
+import authRouter from "./routes/auth.js";   
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 
@@ -14,7 +14,7 @@ const app = express();
 
 // --------------------- MIDDLEWARE ---------------------
 
-console.log("Runtime DATABASE_URL:", process.env.DATABASE_URL);
+// console.log("Runtime DATABASE_URL:", process.env.DATABASE_URL);
 
 
 app.disable("x-powered-by");
@@ -83,6 +83,6 @@ app.get("/debug/ip", (req, res) => {
 
 
 
-// --------------------- START SERVER ---------------------
+// --------------------- start SERVER ---------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
