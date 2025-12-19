@@ -1,5 +1,3 @@
-// backend/src/lib/ip.js
-
 function normalizeIp(ip) {
   if (!ip) return null;
 

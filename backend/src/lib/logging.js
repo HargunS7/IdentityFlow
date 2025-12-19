@@ -1,4 +1,3 @@
-// backend/src/lib/logging.js
 import { supabase } from "./SupabaseClient.js";
 import crypto from "node:crypto";
 import { getClientIp } from "./ip.js";

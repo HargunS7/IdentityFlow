@@ -33,8 +33,8 @@ export function validatePasswordStrength(password, context = {}) {
   }
 
   const length = password.length;
-  if (length < 12 || length > 128) {
-    return { valid: false, reason: "Password must be 12-128 characters long" };
+  if (length < 8 || length > 128) {
+    return { valid: false, reason: "Password must be 8-128 characters long" };
   }
 
   if (!/[a-z]/.test(password)) {

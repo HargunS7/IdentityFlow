@@ -1,4 +1,4 @@
-// src/context/AuthContext.jsx
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { login as loginService, signup as signupService, logout as logoutService } from "../services/authService.js";
 import { getMe } from "../services/iamService.js";

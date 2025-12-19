@@ -1,4 +1,4 @@
-// backend/src/controllers/iamSessionController.js
+
 import prisma from "../PrismaClient.js";
 import { logAudit } from "../lib/logging.js";
 

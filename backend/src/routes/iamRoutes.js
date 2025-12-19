@@ -1,4 +1,3 @@
-// backend/src/routes/iamRoutes.js
 import express from "express";
 import { auth } from "../middleware/auth.js";
 import { requireRoles, requirePerms } from "../middleware/rbac.js";

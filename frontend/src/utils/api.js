@@ -1,7 +1,6 @@
-// src/utils/api.js
 import axios from "axios";
 
-// This module manages *only* axios logic.
+// This module manages only axios logic.
 // AuthContext will inject the token using setAuthToken().
 
 // ---------------------------------------------

@@ -1,4 +1,3 @@
-// backend/src/controllers/iamUserController.js
 import { PrismaClient } from "@prisma/client";
 import argon2 from "argon2";
 import {

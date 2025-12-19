@@ -1,4 +1,4 @@
-// backend/src/controllers/auditController.js
+
 import prisma from "../PrismaClient.js";
 
 /**

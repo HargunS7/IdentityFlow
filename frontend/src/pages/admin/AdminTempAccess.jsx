@@ -1,4 +1,3 @@
-// src/pages/admin/AdminTempAccess.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import AnimatedWrapper from "../../components/animatedWrapper.jsx";
 import AdminGate from "../../components/adminGate.jsx";

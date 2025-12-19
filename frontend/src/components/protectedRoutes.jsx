@@ -1,4 +1,3 @@
-// src/components/protectedRoutes.jsx
 import React from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";

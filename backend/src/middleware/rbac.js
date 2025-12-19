@@ -1,5 +1,3 @@
-// backend/src/middleware/rbac.js
-
 /**
  * requireRoles("admin", "manager")
  * Passes if the user has *any* of the required roles.
