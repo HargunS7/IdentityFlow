@@ -2,6 +2,7 @@ import React from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
+import { Spinner } from "./ui.jsx";
 
 /**
  * Route guard.
@@ -51,7 +52,7 @@ function AuthLoading() {
   return (
     <div className="min-h-[40vh] w-full flex items-center justify-center">
       <div className="flex flex-col items-center gap-3 text-white/70">
-        <div className="h-10 w-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        <Spinner size="lg" />
         <div className="text-sm">Checking your session…</div>
       </div>
     </div>

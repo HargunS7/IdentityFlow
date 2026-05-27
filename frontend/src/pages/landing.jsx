@@ -1,316 +1,310 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import AnimatedWrapper from "../components/animatedWrapper.jsx";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0 },
 };
 
 export default function Landing() {
   const navigate = useNavigate();
-  const reduceMotion = useReducedMotion();
+  const reduce = useReducedMotion();
 
   return (
-    <AnimatedWrapper>
-      <div className="min-h-screen w-full">
-        <div className="mx-auto max-w-6xl px-4 pt-14 pb-14">
-          {/* HERO */}
+    <div className="min-h-screen w-full">
+      <div className="mx-auto max-w-6xl px-4 pt-12 pb-20">
+        {/* HERO */}
+        <motion.div
+          initial={reduce ? false : "hidden"}
+          animate="show"
+          transition={{ staggerChildren: reduce ? 0 : 0.08 }}
+          className="rounded-[28px] border border-white/10 bg-white/[0.04] backdrop-blur-xl p-8 md:p-12 shadow-[0_30px_80px_rgba(0,0,0,0.4)] relative overflow-hidden"
+        >
+          {/* Decorative orbs */}
+          <div className="pointer-events-none absolute -top-32 -right-24 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
+
           <motion.div
-            initial={reduceMotion ? false : "hidden"}
-            whileInView={reduceMotion ? undefined : "show"}
-            viewport={{ once: true, amount: 0.25 }}
-            transition={{ staggerChildren: reduceMotion ? 0 : 0.06 }}
-            className={[
-              "rounded-3xl border border-white/10 bg-white/5 p-8 md:p-12",
-              "backdrop-blur-md md:backdrop-blur-xl",
-              "shadow-[0_12px_40px_rgba(0,0,0,0.32)]",
-              "will-change-transform",
-            ].join(" ")}
+            variants={fadeUp}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70"
           >
-            <motion.div
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70"
-            >
-              <span className="h-2 w-2 rounded-full bg-emerald-400/80" />
-              Indentity Flow an Interactive IAM Playground 
-            </motion.div>
-
-            <motion.h1
-              variants={fadeUp}
-              className="mt-5 text-4xl md:text-6xl font-semibold tracking-tight text-white"
-            >
-              Learn IAM by using it —
-              <span className="text-white/80"> like a real security console</span>.
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp}
-              className="mt-4 max-w-3xl text-base md:text-lg text-white/70"
-            >
-              Identity & Access Management (IAM) is the backbone of modern application security.
-              This project teaches IAM fundamentals through a working dashboard where access
-              changes live as roles and permissions change.
-            </motion.p>
-
-            <motion.p variants={fadeUp} className="mt-3 max-w-3xl text-sm text-white/60">
-              Real IAM systems (cloud consoles, enterprise dashboards, internal tools) all answer the
-              same questions: <span className="text-white/80">Who are you?</span>{" "}
-              <span className="text-white/80">What can you do?</span>{" "}
-              <span className="text-white/80">How do we trace actions?</span>
-            </motion.p>
-
-            <motion.div variants={fadeUp} className="mt-7 flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => navigate("/login")}
-                className="rounded-2xl px-5 py-3 text-sm font-semibold text-black bg-white hover:bg-white/90 transition shadow"
-              >
-                Try the Dashboard
-              </button>
-
-              <button
-                onClick={() => navigate("/learn")}
-                className="rounded-2xl px-5 py-3 text-sm font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
-              >
-                Learn IAM Concepts
-              </button>
-            </motion.div>
-
-            {/* Quick highlights */}
-            <motion.div variants={fadeUp} className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FeatureCard
-                title="Role-Based Access Control"
-                desc="Users get roles, roles map to permissions, and routes enforce access checks."
-                tag="RBAC"
-              />
-              <FeatureCard
-                title="Audit Logs & Security Visibility"
-                desc="Sensitive actions generate an audit trail for tracing activity and incidents."
-                tag="Audit"
-              />
-              <FeatureCard
-                title="Temporary Access (JIT)"
-                desc="Grant risky permissions for minutes, not forever. Automatically expires."
-                tag="JIT"
-              />
-            </motion.div>
+            <span className="h-2 w-2 rounded-full bg-emerald-400/80 animate-pulse" />
+            IdentityFlow · Interactive IAM playground
           </motion.div>
 
-          {/* WHY IAM EXISTS */}
-          <motion.div
-            initial={reduceMotion ? false : "hidden"}
-            whileInView={reduceMotion ? undefined : "show"}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ staggerChildren: reduceMotion ? 0 : 0.06 }}
-            className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6"
+          <motion.h1
+            variants={fadeUp}
+            className="mt-5 text-4xl md:text-6xl font-semibold tracking-tight text-white"
           >
-            <InfoBlock
-              title="Why IAM exists"
-              subtitle="Every secure system must answer these:"
-              points={[
-                "Who is making this request? (Identity)",
-                "How do we prove it’s really them? (Authentication)",
-                "What are they allowed to do? (Authorization)",
-                "How do we trace actions later? (Audit Logging)",
-              ]}
-            />
+            Learn IAM by{" "}
+            <span className="bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
+              actually using it
+            </span>
+            .
+          </motion.h1>
 
-            <InfoBlock
-              title="What goes wrong without IAM"
-              subtitle="Common security failures:"
-              points={[
-                "Over-privileged accounts (everyone becomes admin).",
-                "Permissions tied to users instead of roles (permission sprawl).",
-                "No reliable audit trail (hard to investigate incidents).",
-                "Long-lived access for risky actions (no JIT).",
-              ]}
-            />
+          <motion.p
+            variants={fadeUp}
+            className="mt-5 max-w-3xl text-base md:text-lg text-white/70 leading-relaxed"
+          >
+            Identity & Access Management is the backbone of every secure system.
+            This is a working dashboard that lets you{" "}
+            <span className="text-white">see roles, permissions, sessions, audit logs,</span> and{" "}
+            <span className="text-white">just-in-time access</span> change in real time as you use them.
+          </motion.p>
+
+          <motion.div
+            variants={fadeUp}
+            className="mt-7 flex flex-col sm:flex-row gap-3"
+          >
+            <button
+              onClick={() => navigate("/login")}
+              className="rounded-2xl px-5 py-3 text-sm font-semibold text-black bg-white hover:bg-white/90 transition shadow-[0_10px_30px_rgba(255,255,255,0.2)]"
+            >
+              Open the dashboard →
+            </button>
+            <button
+              onClick={() => navigate("/learn")}
+              className="rounded-2xl px-5 py-3 text-sm font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
+            >
+              Read the IAM primer
+            </button>
           </motion.div>
 
-          {/* IAM IN THE REAL WORLD */}
-          <div className="mt-10">
-            <SectionHeader
-              eyebrow="REAL WORLD"
-              title="Where IAM shows up in real systems"
-              desc="This project mirrors how production systems structure access control — simplified for learning."
+          <motion.div
+            variants={fadeUp}
+            className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            <FeatureCard
+              tag="RBAC"
+              title="Role-Based Access Control"
+              desc="Users get roles, roles map to permissions, and every protected route enforces the check before running."
             />
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <MiniCard
-                title="Cloud consoles"
-                desc="AWS IAM, Azure AD, GCP IAM — roles, policies, audit trails."
-                tag="Cloud"
-              />
-              <MiniCard
-                title="Enterprise dashboards"
-                desc="Internal tools enforce role checks before admin actions."
-                tag="Enterprise"
-              />
-              <MiniCard
-                title="High-trust industries"
-                desc="Finance/healthcare rely on logging + least privilege for compliance."
-                tag="Compliance"
-              />
-              <MiniCard
-                title="DevOps & infra"
-                desc="Access to deployments, secrets, and incidents should be time-bound."
-                tag="DevOps"
-              />
-            </div>
-          </div>
-
-          {/* WHAT YOU'LL LEARN */}
-          <div className="mt-10">
-            <SectionHeader
-              eyebrow="OUTCOMES"
-              title="What you’ll learn by using this app"
-              desc="These are the same skills you’ll need for backend + security interviews."
+            <FeatureCard
+              tag="Audit"
+              title="Security visibility"
+              desc="Every sensitive action is logged with actor, target, IP, and metadata for investigation and compliance."
             />
+            <FeatureCard
+              tag="JIT"
+              title="Just-in-time access"
+              desc="Grant a risky permission for minutes, not forever. Expiry is automatic — no cleanup needed."
+            />
+          </motion.div>
+        </motion.div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <LearnCard
-                title="Understand RBAC deeply"
-                bullets={[
-                  "Roles bundle permissions.",
-                  "User’s effective access comes from roles + temp grants.",
-                  "Changing a role changes access across the system.",
-                ]}
-              />
-              <LearnCard
-                title="See security visibility in action"
-                bullets={[
-                  "Sensitive actions produce audit logs.",
-                  "Sessions can be investigated and revoked.",
-                  "Temporary access reduces risk and expires automatically.",
-                ]}
-              />
-            </div>
+        {/* HOW IT WORKS — visual flow */}
+        <section className="mt-14">
+          <SectionHeader
+            eyebrow="HOW IT WORKS"
+            title="The path of every protected request"
+            desc="Identity, authentication, authorization, and audit — wired end-to-end."
+          />
+          <div className="mt-6">
+            <FlowDiagram />
           </div>
+        </section>
 
-          {/* YOUR MODELS */}
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InfoBlock
-              title="Explore as a normal user"
-              subtitle="Learn what a user can and can’t do:"
-              points={[
-                "View identity and effective permissions.",
-                "See time-bound grants when assigned.",
-                "Understand why routes deny access.",
-                "Build intuition for least privilege.",
+        {/* CORE CONCEPTS */}
+        <section className="mt-14">
+          <SectionHeader
+            eyebrow="THE FUNDAMENTALS"
+            title="Four questions every secure system must answer"
+            desc="These are the same questions AWS IAM, Azure AD, and every internal admin tool is built around."
+          />
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <QuestionCard
+              n="01"
+              question="Who is making this request?"
+              answer="Identity"
+              body="Every action is tied to a user. The system needs a stable identifier (id, email) and attributes (MFA, createdAt) to reason about access."
+              keyword="IDENTITY"
+            />
+            <QuestionCard
+              n="02"
+              question="How do we prove it's really them?"
+              answer="Authentication"
+              body="Login flow + token issuance. In this project, you log in with a password and receive an httpOnly JWT cookie. The cookie proves identity to every protected route."
+              keyword="AUTHENTICATION"
+            />
+            <QuestionCard
+              n="03"
+              question="What are they allowed to do?"
+              answer="Authorization"
+              body="A user's roles unlock permission codes (USER_READ, SESSION_REVOKE). Routes enforce required permissions before running — even temporary grants are honored."
+              keyword="AUTHORIZATION"
+            />
+            <QuestionCard
+              n="04"
+              question="How do we trace it later?"
+              answer="Audit logging"
+              body="Sensitive actions append to an immutable audit log with actor, target, action, IP, user-agent, and metadata. Critical for incident response and compliance."
+              keyword="AUDIT"
+            />
+          </div>
+        </section>
+
+        {/* REAL WORLD */}
+        <section className="mt-14">
+          <SectionHeader
+            eyebrow="WHERE THIS LIVES"
+            title="Where IAM shows up in real systems"
+            desc="This project is simplified for learning, but the model maps directly to production tools."
+          />
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MiniCard
+              tag="Cloud"
+              title="Cloud consoles"
+              desc="AWS IAM, Azure AD, GCP IAM — roles, policies, and audit trails."
+            />
+            <MiniCard
+              tag="SaaS"
+              title="Enterprise dashboards"
+              desc="Internal admin tools enforce per-permission checks before any privileged action."
+            />
+            <MiniCard
+              tag="Compliance"
+              title="High-trust industries"
+              desc="Finance and healthcare rely on audit logs + least privilege to satisfy auditors."
+            />
+            <MiniCard
+              tag="DevOps"
+              title="Infrastructure access"
+              desc="Production access, secrets, and runbooks are time-bound — JIT is the default."
+            />
+          </div>
+        </section>
+
+        {/* OUTCOMES */}
+        <section className="mt-14">
+          <SectionHeader
+            eyebrow="WHAT YOU'LL LEARN"
+            title="Skills you can put on your résumé"
+            desc="These map directly to backend, security, and platform-engineering interview topics."
+          />
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <LearnCard
+              title="Understand RBAC deeply"
+              bullets={[
+                "How roles bundle permissions and why that scales better than per-user grants.",
+                "How a single role change instantly shifts what a user can do.",
+                "How temporary grants compose with permanent ones (least privilege, JIT).",
               ]}
             />
-
-            <InfoBlock
-              title="Explore as a privileged role"
-              subtitle="Experience real console behavior:"
-              points={[
-                "User + role management (RBAC).",
-                "Session visibility and revocation.",
-                "Audit trail review and filtering.",
-                "JIT temporary access grants.",
+            <LearnCard
+              title="See security visibility in action"
+              bullets={[
+                "How sensitive actions produce audit logs you can investigate.",
+                "How session lookup + revocation work, and why JWT-only ≠ logout.",
+                "How time-bound access dramatically reduces blast radius.",
               ]}
             />
           </div>
+        </section>
 
-          {/* FOOTER CTA */}
-          <div className="mt-12 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md md:backdrop-blur-xl p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-[0_12px_40px_rgba(0,0,0,0.26)]">
+        {/* CTA */}
+        <section className="mt-14">
+          <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] backdrop-blur-xl p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 shadow-[0_18px_55px_rgba(0,0,0,0.35)]">
             <div>
-              <div className="text-xs uppercase tracking-wider text-white/60">Next step</div>
-              <h3 className="mt-2 text-xl font-semibold text-white">Want to learn faster?</h3>
-              <p className="mt-1 text-sm text-white/70 max-w-2xl">
-                Start with the Learn IAM page, then log in and watch your effective permissions change live.
+              <div className="text-[11px] uppercase tracking-[0.14em] text-white/50">
+                Try it
+              </div>
+              <h3 className="mt-1 text-2xl md:text-3xl font-semibold text-white">
+                Watch permissions change live.
+              </h3>
+              <p className="mt-2 text-sm md:text-base text-white/70 max-w-2xl">
+                Sign in, grant yourself a temporary permission, and see the admin
+                console unlock new modules in real time.
               </p>
             </div>
+
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => navigate("/learn")}
                 className="rounded-2xl px-5 py-3 text-sm font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
               >
-                Learn IAM
+                Read the primer
               </button>
               <button
                 onClick={() => navigate("/login")}
                 className="rounded-2xl px-5 py-3 text-sm font-semibold text-black bg-white hover:bg-white/90 transition shadow"
               >
-                Login
+                Try the dashboard
               </button>
             </div>
           </div>
+        </section>
 
-          {/* Footer line */}
-          <div className="mt-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-white/60 text-sm">
-            <p>Built as a modular IAM system + educational demo.</p>
-            <div className="flex gap-3">
-              <button onClick={() => navigate("/learn")} className="hover:text-white transition">
-                Learn
-              </button>
-              <button onClick={() => navigate("/login")} className="hover:text-white transition">
-                Login
-              </button>
-            </div>
+        {/* Footer */}
+        <div className="mt-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-white/55 text-xs">
+          <p>
+            Built as a modular IAM demo · Prisma · React · Tailwind ·
+            httpOnly cookies · session-aware JWTs
+          </p>
+          <div className="flex gap-4">
+            <button onClick={() => navigate("/learn")} className="hover:text-white transition">
+              Learn
+            </button>
+            <button onClick={() => navigate("/login")} className="hover:text-white transition">
+              Login
+            </button>
           </div>
         </div>
       </div>
-    </AnimatedWrapper>
+    </div>
   );
 }
 
 /* -------------------- UI pieces -------------------- */
 
-function FeatureCard({ title, desc, tag }) {
+function FeatureCard({ tag, title, desc }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 md:backdrop-blur-md">
-      <div className="flex items-center justify-between">
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 220, damping: 18 }}
+      className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md"
+    >
+      <div className="flex items-center justify-between gap-2">
         <div className="text-sm font-semibold text-white">{title}</div>
-        <span className="text-xs px-2 py-1 rounded-full bg-white/10 border border-white/10 text-white/70">
+        <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/70">
           {tag}
         </span>
       </div>
-      <p className="mt-2 text-sm text-white/70">{desc}</p>
-    </div>
-  );
-}
-
-function InfoBlock({ title, subtitle, points }) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6 md:backdrop-blur-md">
-      <h3 className="text-lg font-semibold text-white">{title}</h3>
-      {subtitle && <p className="mt-1 text-sm text-white/60">{subtitle}</p>}
-      <ul className="mt-4 space-y-2 text-sm text-white/70">
-        {points.map((p) => (
-          <li key={p} className="flex items-start gap-2">
-            <span className="mtt mt-1 h-2 w-2 rounded-full bg-white/40" />
-            <span>{p}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+      <p className="mt-2 text-sm text-white/70 leading-relaxed">{desc}</p>
+    </motion.div>
   );
 }
 
 function SectionHeader({ eyebrow, title, desc }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8 md:backdrop-blur-md">
-      <div className="text-xs uppercase tracking-wider text-white/60">{eyebrow}</div>
-      <h2 className="mt-2 text-2xl md:text-3xl font-semibold text-white">{title}</h2>
-      <p className="mt-2 text-sm md:text-base text-white/70 max-w-4xl">{desc}</p>
+    <div>
+      <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">
+        {eyebrow}
+      </div>
+      <h2 className="mt-1 text-2xl md:text-3xl font-semibold tracking-tight text-white">
+        {title}
+      </h2>
+      {desc && (
+        <p className="mt-2 text-sm md:text-base text-white/65 max-w-3xl">{desc}</p>
+      )}
     </div>
   );
 }
 
-function MiniCard({ title, desc, tag }) {
+function MiniCard({ tag, title, desc }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/[0.07]">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-white">{title}</div>
-          <p className="mt-2 text-sm text-white/70">{desc}</p>
-        </div>
-        <span className="shrink-0 text-xs px-2 py-1 rounded-full bg-white/10 border border-white/10 text-white/70">
+        <div className="text-sm font-semibold text-white">{title}</div>
+        <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/70">
           {tag}
         </span>
       </div>
+      <p className="mt-2 text-sm text-white/70 leading-relaxed">{desc}</p>
     </div>
   );
 }
@@ -319,14 +313,83 @@ function LearnCard({ title, bullets }) {
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
       <div className="text-base font-semibold text-white">{title}</div>
-      <ul className="mt-3 space-y-2 text-sm text-white/70">
+      <ul className="mt-3 space-y-2.5 text-sm text-white/70">
         {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2">
-            <span className="mt-1 h-2 w-2 rounded-full bg-white/40" />
+          <li key={b} className="flex items-start gap-2.5">
+            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-white/50" />
             <span>{b}</span>
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function QuestionCard({ n, question, answer, body, keyword }) {
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 220, damping: 18 }}
+      className="rounded-3xl border border-white/10 bg-white/[0.04] p-6"
+    >
+      <div className="flex items-center gap-3">
+        <div className="text-[11px] font-mono text-white/40">{n}</div>
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/60 tracking-wider">
+          {keyword}
+        </span>
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-white">{question}</h3>
+      <div className="mt-1 text-sm text-white/55">
+        Answer: <span className="text-white/85">{answer}</span>
+      </div>
+      <p className="mt-3 text-sm text-white/70 leading-relaxed">{body}</p>
+    </motion.div>
+  );
+}
+
+function FlowDiagram() {
+  const steps = [
+    { label: "Login", sub: "POST /api/auth/login" },
+    { label: "JWT issued", sub: "httpOnly cookie + sid" },
+    { label: "Request", sub: "with cookie attached" },
+    { label: "Verify", sub: "user + session active" },
+    { label: "Authorize", sub: "role/permission gate" },
+    { label: "Audit", sub: "log actor + action" },
+  ];
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 md:p-8">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {steps.map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.3, delay: i * 0.06 }}
+            className="relative rounded-2xl border border-white/10 bg-white/[0.04] p-3"
+          >
+            <div className="text-[11px] text-white/45 font-mono">
+              {String(i + 1).padStart(2, "0")}
+            </div>
+            <div className="mt-1 text-sm font-semibold text-white">
+              {s.label}
+            </div>
+            <div className="text-[11px] text-white/55 mt-0.5">{s.sub}</div>
+            {i < steps.length - 1 && (
+              <div className="hidden md:block absolute right-[-10px] top-1/2 -translate-y-1/2 text-white/25">
+                →
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+      <div className="mt-4 text-xs text-white/55">
+        Any failure short-circuits the request with a 401/403 and the next
+        request restarts from step 3. Revoking a session immediately breaks
+        step 4 — no waiting for the JWT to expire.
+      </div>
     </div>
   );
 }

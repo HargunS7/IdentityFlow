@@ -1,271 +1,384 @@
-import React, { useEffect, useMemo, useState } from "react";
-import AnimatedWrapper from "../../components/animatedWrapper.jsx";
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+
 import { useAuth } from "../../context/AuthContext.jsx";
-import { hasPerm } from "../../utils/permissions.js";
-import { listUsers, assignRole, removeRole, deleteUser } from "../../services/adminService.js";
+import { hasPerm, PERMISSIONS, ROLES } from "../../utils/permissions.js";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue.js";
 
-// ✅ Non-admin roles only
-const ASSIGNABLE_ROLES = ["user", "manager", "security_analyst", "auditor"];
+import {
+  useUsersQuery,
+  useAssignRole,
+  useRemoveRole,
+  useDeleteUser,
+} from "../../services/queries.js";
 
-function Chip({ children }) {
+import {
+  PageHeader,
+  Card,
+  CardHeader,
+  Button,
+  Input,
+  Select,
+  Field,
+  Chip,
+  Badge,
+  Skeleton,
+  SkeletonRow,
+  EmptyState,
+  ConfirmDialog,
+  Modal,
+  Breadcrumbs,
+} from "../../components/ui.jsx";
+
+// Non-admin roles only — admin can never be assigned via the UI.
+const ASSIGNABLE_ROLES = [
+  ROLES.USER,
+  ROLES.MANAGER,
+  ROLES.SECURITY_ANALYST,
+  ROLES.AUDITOR,
+];
+
+export default function AdminUsers() {
+  const navigate = useNavigate();
+  const { permissions } = useAuth();
+
+  const canRead = hasPerm(permissions, PERMISSIONS.USER_READ);
+  const canAssign = hasPerm(permissions, PERMISSIONS.ROLE_ASSIGN);
+  const canDelete = hasPerm(permissions, PERMISSIONS.USER_DELETE);
+
+  // Filter state
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const debouncedSearch = useDebouncedValue(search, 250);
+
+  // Fetch
+  const { data, isLoading, isFetching, isError, refetch } = useUsersQuery(
+    {},
+    // We filter client-side; the backend has no search param yet.
+  );
+  const users = data?.users || [];
+
+  // Modal state
+  const [roleModal, setRoleModal] = useState(null); // { user, action: "assign"|"remove" }
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const assignRoleM = useAssignRole();
+  const removeRoleM = useRemoveRole();
+  const deleteUserM = useDeleteUser();
+
+  const filtered = useMemo(() => {
+    let list = users;
+    if (debouncedSearch.trim()) {
+      const s = debouncedSearch.trim().toLowerCase();
+      list = list.filter(
+        (u) =>
+          (u.email || "").toLowerCase().includes(s) ||
+          (u.username || "").toLowerCase().includes(s)
+      );
+    }
+    if (roleFilter !== "all") {
+      list = list.filter((u) => (u.roles || []).includes(roleFilter));
+    }
+    return list;
+  }, [users, debouncedSearch, roleFilter]);
+
+  if (!canRead) {
+    return (
+      <NoAccess title="Users" />
+    );
+  }
+
   return (
-    <span className="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">
-      {children}
-    </span>
+    <div className="space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Console", to: "/admin", onClick: () => navigate("/admin") },
+          { label: "Users & Roles" },
+        ]}
+      />
+
+      <PageHeader
+        eyebrow="USER MANAGEMENT"
+        title="Users & Roles"
+        subtitle="Search users, inspect access, assign or remove roles. Every change is audited."
+        actions={
+          <Button variant="secondary" onClick={() => refetch()} loading={isFetching}>
+            Refresh
+          </Button>
+        }
+      />
+
+      {/* Filters */}
+      <Card padded>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div className="md:col-span-7">
+            <Field label="Search">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by email or username…"
+              />
+            </Field>
+          </div>
+          <div className="md:col-span-3">
+            <Field label="Role filter">
+              <Select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <option value="all">All roles</option>
+                {[ROLES.ADMIN, ...ASSIGNABLE_ROLES].map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className="md:col-span-2 flex items-end">
+            <div className="w-full text-right text-xs text-white/55">
+              {filtered.length} of {users.length}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* List */}
+      {isError && (
+        <Card padded className="!p-4 border-red-500/30 bg-red-500/5">
+          <div className="text-sm text-red-200">
+            Failed to load users. Try refreshing.
+          </div>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          title={search || roleFilter !== "all" ? "No users match your filters" : "No users yet"}
+          subtitle={search || roleFilter !== "all" ? "Try clearing your search or role filter." : "Once users sign up, they'll appear here."}
+          action={
+            (search || roleFilter !== "all") && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setSearch("");
+                  setRoleFilter("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            )
+          }
+        />
+      ) : (
+        <motion.div layout className="space-y-3">
+          <AnimatePresence initial={false}>
+            {filtered.map((u) => (
+              <motion.div
+                key={u.id}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18 }}
+              >
+                <UserRow
+                  user={u}
+                  canAssign={canAssign}
+                  canDelete={canDelete}
+                  onAssign={() => setRoleModal({ user: u, action: "assign" })}
+                  onRemove={() => setRoleModal({ user: u, action: "remove" })}
+                  onDelete={() => setDeleteTarget(u)}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      )}
+
+      {/* Role modal */}
+      <RoleModal
+        open={!!roleModal}
+        action={roleModal?.action}
+        user={roleModal?.user}
+        loading={assignRoleM.isPending || removeRoleM.isPending}
+        onClose={() => setRoleModal(null)}
+        onConfirm={async (roleName) => {
+          if (!roleModal) return;
+          const { user, action } = roleModal;
+          if (action === "assign") {
+            await assignRoleM.mutateAsync({ userId: user.id, roleName });
+          } else {
+            await removeRoleM.mutateAsync({ userId: user.id, roleName });
+          }
+          setRoleModal(null);
+        }}
+      />
+
+      {/* Delete confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this user?"
+        description={
+          deleteTarget && (
+            <>
+              You're about to delete{" "}
+              <span className="text-white font-semibold">
+                {deleteTarget.email}
+              </span>
+              . This wipes their sessions, role assignments, and audit logs.
+              This cannot be undone.
+            </>
+          )
+        }
+        confirmLabel="Delete user"
+        variant="danger"
+        loading={deleteUserM.isPending}
+        onClose={() => !deleteUserM.isPending && setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          await deleteUserM.mutateAsync(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
+    </div>
   );
 }
 
-export default function AdminUsers() {
-  const { permissions } = useAuth();
-
-  const [users, setUsers] = useState([]);
-  const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState("");
-  const [error, setError] = useState("");
-
-  const [selectedAssignByUser, setSelectedAssignByUser] = useState({});
-  const [selectedRemoveByUser, setSelectedRemoveByUser] = useState({});
-
-  const canReadUsers =  hasPerm(permissions, "ADMIN");
-  const canAssign = hasPerm(permissions, "ROLE_ASSIGN");
-  const canDelete = hasPerm(permissions, "USER_DELETE");
-
-  async function loadUsers() {
-    try {
-      setLoading(true);
-      setError("");
-      const data = await listUsers();
-      setUsers(data?.users || data || []);
-    } catch (e) {
-      console.error(e);
-      setError(e?.response?.data?.error || "Failed to load users");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (canReadUsers) loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const filteredUsers = useMemo(() => {
-    if (!q.trim()) return users;
-    const s = q.toLowerCase();
-    return users.filter((u) =>
-      (u.email || "").toLowerCase().includes(s) ||
-      (u.username || "").toLowerCase().includes(s)
-    );
-  }, [users, q]);
-
-  function showToast(msg) {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2200);
-  }
-
-  async function handleAssign(userId) {
-    const roleName = selectedAssignByUser[userId];
-    if (!roleName) return;
-
-    try {
-      await assignRole(userId, roleName);
-      showToast(`Assigned ${roleName} ✅`);
-      await loadUsers();
-    } catch (e) {
-      console.error(e);
-      showToast(e?.response?.data?.error || "Assign failed ❌");
-    }
-  }
-
-  async function handleRemove(userId) {
-    const roleName = selectedRemoveByUser[userId];
-    if (!roleName) return;
-
-    try {
-      await removeRole(userId, roleName);
-      showToast(`Removed ${roleName} ✅`);
-      await loadUsers();
-    } catch (e) {
-      console.error(e);
-      showToast(e?.response?.data?.error || "Remove failed ❌");
-    }
-  }
-
-  async function handleDelete(userId) {
-    if (!confirm("Delete this user?")) return;
-    try {
-      await deleteUser(userId);
-      showToast("User deleted ✅");
-      await loadUsers();
-    } catch (e) {
-      console.error(e);
-      showToast(e?.response?.data?.error || "Delete failed ❌");
-    }
-  }
-
-  if (!canReadUsers) {
-    return (
-      <AnimatedWrapper>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white">
-          <h1 className="text-2xl font-semibold">Users</h1>
-          <p className="mt-2 text-white/70">You don’t have permission to view users.</p>
-        </div>
-      </AnimatedWrapper>
-    );
-  }
+function UserRow({ user, canAssign, canDelete, onAssign, onRemove, onDelete }) {
+  const userRoles = Array.isArray(user.roles) ? user.roles : [];
+  const isAdmin = userRoles.includes(ROLES.ADMIN);
 
   return (
-    <AnimatedWrapper>
-      <div className="space-y-5">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-semibold text-white">Users</h1>
-            <p className="mt-1 text-sm text-white/60">
-              Search, assign roles, and manage users.
-            </p>
+    <Card padded className="!p-5">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-white font-semibold truncate">{user.email}</div>
+            {user.username && (
+              <span className="text-white/50 text-sm">@{user.username}</span>
+            )}
+            {isAdmin && <Badge variant="info">admin</Badge>}
+            {user.mfaEnabled && <Badge variant="good">MFA</Badge>}
           </div>
 
-          <div className="w-full md:w-80">
-            <label className="text-xs text-white/60">Search</label>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="email or username..."
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 outline-none focus:border-white/20 focus:bg-white/10 transition"
-            />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {userRoles.length ? (
+              userRoles.map((r) => <Chip key={r}>{r}</Chip>)
+            ) : (
+              <span className="text-xs text-white/55">No roles</span>
+            )}
           </div>
         </div>
 
-        {toast && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-            {toast}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2 shrink-0">
+          {canAssign && (
+            <Button size="sm" variant="secondary" onClick={onAssign}>
+              Assign role
+            </Button>
+          )}
+          {canAssign && userRoles.some((r) => r !== ROLES.ADMIN) && (
+            <Button size="sm" variant="ghost" onClick={onRemove}>
+              Remove role
+            </Button>
+          )}
+          {canDelete && !isAdmin && (
+            <Button size="sm" variant="danger" onClick={onDelete}>
+              Delete
+            </Button>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
 
-        {error && (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {error}
-          </div>
-        )}
+function RoleModal({ open, action, user, loading, onClose, onConfirm }) {
+  const [roleName, setRoleName] = useState("");
 
-        {loading ? (
-          <p className="text-white/60">Loading users…</p>
-        ) : (
-          <div className="space-y-3">
-            {filteredUsers.map((u) => {
-              const userRoles = Array.isArray(u.roles) ? u.roles : [];
-              const removableRoles = userRoles.filter((r) => r !== "admin");
+  React.useEffect(() => {
+    if (open) setRoleName("");
+  }, [open]);
 
-              return (
-                <div
-                  key={u.id}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
-                >
-                  {/* Left */}
-                  <div>
-                    <div className="text-white font-semibold">
-                      {u.email}
-                      {u.username ? (
-                        <span className="text-white/60 font-normal"> • @{u.username}</span>
-                      ) : null}
-                    </div>
+  if (!user) return null;
 
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {userRoles.length === 0 ? (
-                        <span className="text-xs text-white/60">No roles</span>
-                      ) : (
-                        userRoles.map((r) => <Chip key={r}>{r}</Chip>)
-                      )}
-                    </div>
-                  </div>
+  const userRoles = Array.isArray(user.roles) ? user.roles : [];
+  const isAssign = action === "assign";
 
-                  {/* Right */}
-                  <div className="flex flex-col md:flex-row gap-2 md:items-center">
-                    {/* Assign */}
-                    {canAssign && (
-                      <div className="flex gap-2 items-center">
-                        <select
-                          value={selectedAssignByUser[u.id] || ""}
-                          onChange={(e) =>
-                            setSelectedAssignByUser((prev) => ({
-                              ...prev,
-                              [u.id]: e.target.value,
-                            }))
-                          }
-                          className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                        >
-                          <option value="">Select role…</option>
-                          {ASSIGNABLE_ROLES.map((r) => (
-                            <option key={r} value={r}>
-                              {r}
-                            </option>
-                          ))}
-                        </select>
+  const roleOptions = isAssign
+    ? ASSIGNABLE_ROLES
+    : userRoles.filter((r) => r !== ROLES.ADMIN);
 
-                        <button
-                          onClick={() => handleAssign(u.id)}
-                          disabled={!selectedAssignByUser[u.id]}
-                          className="rounded-xl px-3 py-2 text-xs font-semibold bg-white/10 hover:bg-white/15 border border-white/10 text-white disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          Assign
-                        </button>
-                      </div>
-                    )}
+  return (
+    <Modal
+      open={open}
+      onClose={loading ? undefined : onClose}
+      title={isAssign ? "Assign a role" : "Remove a role"}
+    >
+      <p className="text-sm text-white/65">
+        {isAssign
+          ? "Pick a role to assign. This replaces the user's current non-admin role."
+          : "Pick a role to remove. The user keeps their other roles."}
+        <span className="block mt-1 text-white/45 text-xs">
+          User: <span className="text-white/80">{user.email}</span>
+        </span>
+      </p>
 
-                    {/* Remove */}
-                    {canAssign && (
-                      <div className="flex gap-2 items-center">
-                        <select
-                          value={selectedRemoveByUser[u.id] || ""}
-                          onChange={(e) =>
-                            setSelectedRemoveByUser((prev) => ({
-                              ...prev,
-                              [u.id]: e.target.value,
-                            }))
-                          }
-                          className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                        >
-                          <option value="">Remove role…</option>
-                          {removableRoles.map((r) => (
-                            <option key={r} value={r}>
-                              {r}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button
-                          onClick={() => handleRemove(u.id)}
-                          disabled={!selectedRemoveByUser[u.id]}
-                          className="rounded-xl px-3 py-2 text-xs font-semibold bg-white/10 hover:bg-white/15 border border-white/10 text-white disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Delete */}
-                    {canDelete && (
-                      <button
-                        onClick={() => handleDelete(u.id)}
-                        className="rounded-xl px-3 py-2 text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-200"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {filteredUsers.length === 0 && (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-                No users match your search.
-              </div>
-            )}
+      <div className="mt-4">
+        <Field label="Role">
+          <Select
+            value={roleName}
+            onChange={(e) => setRoleName(e.target.value)}
+          >
+            <option value="">Select a role…</option>
+            {roleOptions.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {!roleOptions.length && (
+          <div className="mt-2 text-xs text-white/55">
+            No roles available.
           </div>
         )}
       </div>
-    </AnimatedWrapper>
+
+      <div className="mt-6 flex justify-end gap-2">
+        <Button variant="ghost" onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button
+          variant={isAssign ? "primary" : "danger"}
+          loading={loading}
+          disabled={!roleName}
+          onClick={() => onConfirm(roleName)}
+        >
+          {isAssign ? "Assign" : "Remove"}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+function NoAccess({ title }) {
+  return (
+    <div className="space-y-4">
+      <PageHeader title={title} eyebrow="ACCESS DENIED" />
+      <Card padded>
+        <p className="text-sm text-white/70">
+          You don't have permission to view this page. Ask an admin to grant you
+          the appropriate permission.
+        </p>
+      </Card>
+    </div>
   );
 }

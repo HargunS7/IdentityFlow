@@ -28,6 +28,8 @@ import {
   revokeTemporaryPermission,
 } from "../controllers/iamTempPermController.js";
 
+import { getSummary } from "../controllers/iamSummaryController.js";
+
 const router = express.Router();
 
 /**
@@ -35,6 +37,24 @@ const router = express.Router();
  * Any logged-in user – returns profile + roles + permissions
  */
 router.get("/me", auth(true), getMe);
+
+/* -------------------------------------------------------------------------- */
+/*                              ADMIN SUMMARY                                 */
+/* -------------------------------------------------------------------------- */
+
+// GET /api/admin/summary  — any console-relevant permission unlocks the
+// fields they're allowed to see; non-permitted fields come back as null.
+router.get(
+  "/admin/summary",
+  auth(true),
+  requirePerms(
+    PERMISSIONS.USER_READ,
+    PERMISSIONS.SESSION_READ,
+    PERMISSIONS.AUDIT_READ,
+    PERMISSIONS.TEMP_GRANT
+  ),
+  getSummary
+);
 
 /* -------------------------------------------------------------------------- */
 /*                               USER MANAGEMENT                              */
