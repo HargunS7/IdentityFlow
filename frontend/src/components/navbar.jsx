@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
+import { PERMISSIONS, ROLES } from "../utils/permissions.js";
 
 function cx(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -35,18 +36,18 @@ export default function Navbar() {
 
   // Decide what this user can see
   const consoleLinks = useMemo(() => {
-    // Console should only show for "privileged console permissions"
-    // IMPORTANT: DO NOT include plain USER_READ here (regular users have it)
+    // Console should only show for privileged console permissions.
+    // We do NOT include plain USER_READ here because every user has it.
     const canUsers =
-      hasPerm("ADMIN") ||
-      hasPerm("ROLE_ASSIGN") ||
-      hasPerm("USER_UPDATE") ||
-      hasPerm("USER_CREATE") ||
-      hasPerm("USER_DELETE");
+      hasPerm(PERMISSIONS.ROLE_ASSIGN) ||
+      hasPerm(PERMISSIONS.USER_UPDATE) ||
+      hasPerm(PERMISSIONS.USER_CREATE) ||
+      hasPerm(PERMISSIONS.USER_DELETE);
 
-    const canSessions = hasPerm("ADMIN") || hasPerm("SESSION_READ") || hasPerm("SESSION_REVOKE");
-    const canAudit = hasPerm("ADMIN") || hasPerm("AUDIT_READ");
-    const canTemp = hasPerm("ADMIN") || hasPerm("TEMP_GRANT");
+    const canSessions =
+      hasPerm(PERMISSIONS.SESSION_READ) || hasPerm(PERMISSIONS.SESSION_REVOKE);
+    const canAudit = hasPerm(PERMISSIONS.AUDIT_READ);
+    const canTemp = hasPerm(PERMISSIONS.TEMP_GRANT);
 
     const items = [];
 
@@ -159,7 +160,7 @@ export default function Navbar() {
                   {user?.username || user?.email || "user"}
                 </div>
                 <div className="text-xs text-white/60">
-                  {roles?.includes("admin") ? "Admin access" : "Signed in"}
+                  {roles?.includes(ROLES.ADMIN) ? "Admin access" : "Signed in"}
                 </div>
               </div>
               <button

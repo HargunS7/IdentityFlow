@@ -1,21 +1,45 @@
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import prisma from "../PrismaClient.js";
-import { supabase } from "../lib/SupabaseClient.js";
-import { logSession, logAudit } from "../lib/logging.js";
+import { createSession, logAudit } from "../lib/logging.js";
 import {
   validateEmailFormat,
   validateUsernameFormat,
   validatePasswordStrength,
 } from "../lib/validation.js";
+import { ROLES } from "../lib/permissions.js";
 
-const generateToken = (user) => {
+const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7d
+
+function signAccessToken({ userId, sessionId }) {
   return jwt.sign(
-    { id: user.id },
+    { id: userId, sid: sessionId },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "1h" }
   );
-};
+}
+
+function cookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  };
+}
+
+function setAuthCookies(res, accessToken, refreshTokenId) {
+  res.cookie("access_token", accessToken, {
+    ...cookieOptions(),
+    maxAge: ACCESS_TOKEN_TTL_MS,
+  });
+  res.cookie("refresh_token_id", refreshTokenId, {
+    ...cookieOptions(),
+    maxAge: REFRESH_TOKEN_TTL_MS,
+  });
+}
 
 export const signup = async (req, res) => {
   try {
@@ -28,84 +52,98 @@ export const signup = async (req, res) => {
     const emailCheck = validateEmailFormat(email);
     if (!emailCheck.valid) return res.status(400).json({ error: emailCheck.reason });
 
-    // Username is optional depending on Supabase schema; validate only if present
     if (username) {
       const usernameCheck = validateUsernameFormat(username);
-      if (!usernameCheck.valid) return res.status(400).json({ error: usernameCheck.reason });
+      if (!usernameCheck.valid) {
+        return res.status(400).json({ error: usernameCheck.reason });
+      }
     }
 
     const passwordCheck = validatePasswordStrength(password, { email, username });
-    if (!passwordCheck.valid) return res.status(400).json({ error: passwordCheck.reason });
-
-    // Check existing user in Supabase
-    const { data: existing, error: existingErr } = await supabase
-      .from("User")
-      .select("id")
-      .eq("email", email)
-      .limit(1)
-      .maybeSingle();
-    if (existingErr) {
-      console.error("Supabase existing user check error:", existingErr);
-      return res.status(500).json({ error: "Database error" });
+    if (!passwordCheck.valid) {
+      return res.status(400).json({ error: passwordCheck.reason });
     }
+
+    const existing = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
     if (existing) {
       return res.status(409).json({ error: "Email already registered" });
     }
 
-    const hashedPassword = await argon2.hash(password, {
+    if (username) {
+      const existingUsername = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true },
+      });
+      if (existingUsername) {
+        return res.status(409).json({ error: "Username already taken" });
+      }
+    }
+
+    const passwordHash = await argon2.hash(password, {
       type: argon2.argon2id,
       timeCost: 3,
       memoryCost: 19456,
       parallelism: 1,
     });
 
-    // Insert user into Supabase
-    const { data: inserted, error: insertErr } = await supabase
-      .from("User")
-      .insert({
-        username,
+    const user = await prisma.user.create({
+      data: {
         email,
-        passwordHash: hashedPassword,
-      })
-      .select("id, email")
-      .maybeSingle();
-    if (insertErr) {
-      console.error("Supabase insert user error:", insertErr);
-      return res.status(500).json({ error: "Failed to create user" });
-    }
-
-    const token = generateToken(inserted);
-
-    const cookieSecure = process.env.NODE_ENV === "production";
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000,
-      path: "/",
+        username: username || null,
+        passwordHash,
+      },
+      select: { id: true, email: true, username: true },
     });
 
-    // Async audit log; do not block signup
-    logAudit(inserted.id, "SIGNUP", req, {
-      user: { id: inserted.id, email: inserted.email, username: username || null },
+    // Attach the default "user" role so RBAC checks behave consistently.
+    const baseRole = await prisma.role.findUnique({
+      where: { name: ROLES.USER },
+      select: { id: true },
+    });
+    if (baseRole) {
+      await prisma.userRole.upsert({
+        where: { userId_roleId: { userId: user.id, roleId: baseRole.id } },
+        update: {},
+        create: { userId: user.id, roleId: baseRole.id },
+      });
+    }
+
+    const refreshTokenId = crypto.randomUUID();
+    const session = await createSession({
+      userId: user.id,
+      refreshTokenId,
+      req,
+      ttlMs: REFRESH_TOKEN_TTL_MS,
+    });
+    const accessToken = signAccessToken({
+      userId: user.id,
+      sessionId: session.id,
+    });
+
+    setAuthCookies(res, accessToken, refreshTokenId);
+
+    logAudit(user.id, "SIGNUP", req, {
+      user: { id: user.id, email: user.email, username: user.username || null },
     });
 
     return res.status(201).json({
       message: "User created successfully",
-      user: { id: inserted.id, email: inserted.email },
-      token
+      user: { id: user.id, email: user.email, username: user.username },
     });
   } catch (err) {
-    console.error("🔥 Signup error:", err);
-    return res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("Signup error:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 export const login = async (req, res) => {
   try {
     const { identifier, email, password } = req.body;
-
     const loginId = identifier || email;
+
     if (!loginId || !password) {
       return res.status(400).json({ error: "Identifier and password required" });
     }
@@ -113,62 +151,90 @@ export const login = async (req, res) => {
     let user;
     if (loginId.includes("@")) {
       const emailCheck = validateEmailFormat(loginId);
-      if (!emailCheck.valid) return res.status(400).json({ error: emailCheck.reason });
-      const q = await supabase
-        .from("User")
-        .select("id, email, passwordHash, username")
-        .eq("email", loginId)
-        .limit(1)
-        .maybeSingle();
-      if (q.error || !q.data) return res.status(401).json({ error: "Invalid credentials" });
-      user = q.data;
+      if (!emailCheck.valid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      user = await prisma.user.findUnique({
+        where: { email: loginId },
+        select: { id: true, email: true, passwordHash: true, username: true },
+      });
     } else {
-      // Treat as username
       const usernameCheck = validateUsernameFormat(loginId);
-      if (!usernameCheck.valid) return res.status(400).json({ error: usernameCheck.reason });
-      const q = await supabase
-        .from("User")
-        .select("id, email, passwordHash, username")
-        .eq("username", loginId)
-        .limit(1)
-        .maybeSingle();
-      if (q.error || !q.data) return res.status(401).json({ error: "Invalid credentials" });
-      user = q.data;
+      if (!usernameCheck.valid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      user = await prisma.user.findUnique({
+        where: { username: loginId },
+        select: { id: true, email: true, passwordHash: true, username: true },
+      });
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
     const valid = await argon2.verify(user.passwordHash, password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!valid) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
-    const token = generateToken(user);
     const refreshTokenId = crypto.randomUUID();
-
-    const cookieSecure = process.env.NODE_ENV === "production";
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000,
-      path: "/",
+    const session = await createSession({
+      userId: user.id,
+      refreshTokenId,
+      req,
+      ttlMs: REFRESH_TOKEN_TTL_MS,
     });
-    res.cookie("refresh_token_id", refreshTokenId, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
+    const accessToken = signAccessToken({
+      userId: user.id,
+      sessionId: session.id,
     });
 
-    // Async logs; do not block login
-    logSession(user.id, refreshTokenId, req);
-    logAudit(user.id, "LOGIN", req);
+    setAuthCookies(res, accessToken, refreshTokenId);
+
+    logAudit(user.id, "LOGIN", req, { sessionId: session.id });
 
     return res.json({
       message: "Login successful",
-      user: { id: user.id, email: user.email, username: user.username || undefined ,token:token},
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username || undefined,
+      },
     });
   } catch (err) {
-    console.error("🔥 Login error:", err);
-    return res.status(500).json({ error: "Internal Server Error", details: err.message });
+    console.error("Login error:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
+export const logout = async (req, res) => {
+  try {
+    const refreshTokenId = req.cookies?.refresh_token_id || null;
+    const sessionId = req.session?.id || null;
+    const userId = req.user?.id || null;
+
+    if (sessionId) {
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: { active: false },
+      });
+    } else if (refreshTokenId) {
+      await prisma.session.updateMany({
+        where: { refreshTokenId },
+        data: { active: false },
+      });
+    }
+
+    if (userId) {
+      logAudit(userId, "LOGOUT", req, { sessionId });
+    }
+
+    res.clearCookie("access_token", { path: "/" });
+    res.clearCookie("refresh_token_id", { path: "/" });
+    return res.json({ message: "Logged out" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    return res.status(500).json({ error: "Logout failed" });
+  }
+};

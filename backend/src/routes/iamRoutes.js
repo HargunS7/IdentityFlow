@@ -1,6 +1,7 @@
 import express from "express";
 import { auth } from "../middleware/auth.js";
 import { requireRoles, requirePerms } from "../middleware/rbac.js";
+import { PERMISSIONS, ROLES } from "../lib/permissions.js";
 
 import {
   getMe,
@@ -9,16 +10,23 @@ import {
   updateUser,
   deleteUser,
   userLookup,
-  updateMe
+  updateMe,
 } from "../controllers/iamUserController.js";
 
-import { assignRole,removeRole } from "../controllers/iamRoleController.js";
+import { assignRole, removeRole } from "../controllers/iamRoleController.js";
 
-import { listSessions,revokeSession } from "../controllers/iamSessionController.js";
+import {
+  listSessions,
+  revokeSession,
+} from "../controllers/iamSessionController.js";
 
 import { listAuditLogs } from "../controllers/auditController.js";
 
-import { grantTemporaryPermission,listTemporaryPermissions,revokeTemporaryPermission } from "../controllers/iamTempPermController.js";
+import {
+  grantTemporaryPermission,
+  listTemporaryPermissions,
+  revokeTemporaryPermission,
+} from "../controllers/iamTempPermController.js";
 
 const router = express.Router();
 
@@ -26,34 +34,25 @@ const router = express.Router();
  * GET /api/me
  * Any logged-in user – returns profile + roles + permissions
  */
-router.get(
-  "/me", 
-  auth(true),
-  getMe
-);
+router.get("/me", auth(true), getMe);
 
 /* -------------------------------------------------------------------------- */
 /*                               USER MANAGEMENT                              */
 /* -------------------------------------------------------------------------- */
 
-/**
- * GET /api/admin/users
- * Permission: USER_READ
- * Anyone with USER_READ (admin, manager, user per your mapping) can list users.
- */
+// GET /api/admin/users  (USER_READ — needed by anyone who can manage users)
 router.get(
   "/admin/users",
   auth(true),
-  requirePerms("ADMIN"),
+  requirePerms(PERMISSIONS.USER_READ),
   listUsers
 );
-
 
 // POST /api/admin/users  (USER_CREATE)
 router.post(
   "/admin/users",
   auth(true),
-  requirePerms("USER_CREATE"),
+  requirePerms(PERMISSIONS.USER_CREATE),
   createUser
 );
 
@@ -61,7 +60,7 @@ router.post(
 router.patch(
   "/admin/users/:id",
   auth(true),
-  requirePerms("USER_UPDATE"),
+  requirePerms(PERMISSIONS.USER_UPDATE),
   updateUser
 );
 
@@ -69,84 +68,58 @@ router.patch(
 router.delete(
   "/admin/users/:id",
   auth(true),
-  requirePerms("USER_DELETE"),
+  requirePerms(PERMISSIONS.USER_DELETE),
   deleteUser
 );
 
-/**
- * GET /api/users/lookup?email=...
- * Permission: USER_READ
- */
+// GET /api/users/lookup?email=...  (USER_READ)
 router.get(
   "/users/lookup",
   auth(true),
-  requirePerms("USER_READ"),
-  
+  requirePerms(PERMISSIONS.USER_READ),
   userLookup
 );
 
-
-/**
- * PATCH /api/me
- * Any logged-in user can update their own username
- */
-router.patch(
-  "/me",
-  auth(true),
-  updateMe
-);
-
-
-
+// PATCH /api/me  — any logged-in user can update their own username
+router.patch("/me", auth(true), updateMe);
 
 /* -------------------------------------------------------------------------- */
 /*                               ROLE MANAGEMENT                              */
 /* -------------------------------------------------------------------------- */
 
-
-
+// PUT /api/admin/assign-role  (ROLE_ASSIGN)
 router.put(
   "/admin/assign-role",
   auth(true),
-  requirePerms("ROLE_ASSIGN"),
+  requirePerms(PERMISSIONS.ROLE_ASSIGN),
   assignRole
 );
 
-// DELETE /api/admin/remove-role
-// body: { userId, roleName }
+// PUT /api/admin/remove-role  (ROLE_ASSIGN — same gate as assignRole)
 router.put(
   "/admin/remove-role",
   auth(true),
-  requireRoles("admin"),
+  requirePerms(PERMISSIONS.ROLE_ASSIGN),
   removeRole
 );
-
 
 /* -------------------------------------------------------------------------- */
 /*                                   SESSIONS                                 */
 /* -------------------------------------------------------------------------- */
 
-/**
- * GET /api/admin/sessions
- * Permission: SESSION_READ
- * Lists all sessions (limit 100 for now).
- */
+// GET /api/admin/sessions  (SESSION_READ)
 router.get(
   "/admin/sessions",
   auth(true),
-  requirePerms("SESSION_READ"),
+  requirePerms(PERMISSIONS.SESSION_READ),
   listSessions
 );
 
-/**
- * POST /api/admin/sessions/revoke
- * Permission: SESSION_REVOKE
- * body: { sessionId?: string, refreshTokenId?: string }
- */
+// POST /api/admin/sessions/revoke  (SESSION_REVOKE)
 router.post(
   "/admin/sessions/revoke",
   auth(true),
-  requirePerms("SESSION_REVOKE"),
+  requirePerms(PERMISSIONS.SESSION_REVOKE),
   revokeSession
 );
 
@@ -154,61 +127,50 @@ router.post(
 /*                                 AUDIT LOGS                                 */
 /* -------------------------------------------------------------------------- */
 
-/**
- * GET /api/admin/audit-logs
- * Permission: AUDIT_READ
- * Returns latest 100 audit logs.
- */
+// GET /api/admin/audit-logs  (AUDIT_READ)
 router.get(
   "/admin/audit-logs",
   auth(true),
-  requirePerms("AUDIT_READ"),
+  requirePerms(PERMISSIONS.AUDIT_READ),
   listAuditLogs
 );
 
-
-/* -----------------------------------------------------------------------*/
-/*                          TEMP ROLE MANAGEMENT                          */
-/* -----------------------------------------------------------------------*/
+/* -------------------------------------------------------------------------- */
+/*                          TEMP PERMISSION MANAGEMENT                        */
+/* -------------------------------------------------------------------------- */
 
 router.post(
   "/admin/temp-permissions/grant",
   auth(true),
-  requirePerms("TEMP_GRANT"), // You must add this permission to admin role
+  requirePerms(PERMISSIONS.TEMP_GRANT),
   grantTemporaryPermission
-);  
+);
 
-
-// List temp permissions (optionally filter by user / activeOnly / limit)
 router.get(
   "/admin/temp-permissions",
   auth(true),
-  requirePerms("TEMP_GRANT"), // You can later split into TEMP_VIEW
+  requirePerms(PERMISSIONS.TEMP_GRANT),
   listTemporaryPermissions
 );
 
-// Revoke a temp permission grant
 router.post(
   "/admin/temp-permissions/revoke",
   auth(true),
-  requirePerms("TEMP_GRANT"), // or TEMP_REVOKE if you add it
+  requirePerms(PERMISSIONS.TEMP_GRANT),
   revokeTemporaryPermission
 );
 
+/* ----------------------------------DEBUG------------------------------------ */
 
-// ----------------------------------DEBUG------------------------------------
-
-/**
- * GET /api/debug/rbac
- * Shows the current user's RBAC context.
- * Use ONLY for debugging (don't expose in production)
- */
-router.get("/debug/rbac", auth(true), (req, res) => {
-  return res.json({
-    user: req.user || null,
-    roles: req.userRoles || [],
-    permissions: req.userPerms || [],
+// /api/debug/rbac — mounted from server.js only when NODE_ENV !== "production"
+export function mountDebugRoutes(app) {
+  app.get("/api/debug/rbac", auth(true), (req, res) => {
+    return res.json({
+      user: req.user || null,
+      roles: req.userRoles || [],
+      permissions: req.userPerms || [],
+    });
   });
-});
+}
 
 export default router;

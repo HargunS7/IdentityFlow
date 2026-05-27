@@ -1,14 +1,12 @@
-import { PrismaClient } from "@prisma/client";
 import argon2 from "argon2";
+import prisma from "../PrismaClient.js";
 import {
   validateEmailFormat,
   validateUsernameFormat,
   validatePasswordStrength,
 } from "../lib/validation.js";
 
-import { logAudit,logSession } from "../lib/logging.js";
-
-const prisma = new PrismaClient();
+import { logAudit } from "../lib/logging.js";
 
 /**
  * GET /api/me

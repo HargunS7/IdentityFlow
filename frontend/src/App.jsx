@@ -21,6 +21,12 @@ import AdminSessions from "./pages/admin/AdminSessions.jsx";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs.jsx";
 import AdminTempAccess from "./pages/admin/AdminTempAccess.jsx";
 
+import {
+  PERMISSIONS,
+  CONSOLE_PERMS,
+  ALL_CONSOLE_PERMS,
+} from "./utils/permissions.js";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -52,78 +58,46 @@ export default function App() {
               CONSOLE (permission-based)
               ======================= */}
 
-          {/* Console Home
-              Visible if user has ANY console-capable permission
-              (including temporary grants) */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute
-                requireAnyPerm={[
-                  "ROLE_ASSIGN",
-                  "USER_READ",
-                  "USER_UPDATE",
-                  "USER_CREATE",
-                  "USER_DELETE",
-                  "SESSION_READ",
-                  "SESSION_REVOKE",
-                  "AUDIT_READ",
-                  "TEMP_GRANT",
-                ]}
-              >
+              <ProtectedRoute requireAnyPerms={ALL_CONSOLE_PERMS}>
                 <AdminHome />
               </ProtectedRoute>
             }
           />
 
-          {/* Users & Roles */}
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute
-                requireAnyPerm={[
-                  "ROLE_ASSIGN",
-                  "USER_READ",
-                  "USER_UPDATE",
-                  "USER_CREATE",
-                  "USER_DELETE",
-                ]}
-              >
+              <ProtectedRoute requireAnyPerms={CONSOLE_PERMS.USERS}>
                 <AdminUsers />
               </ProtectedRoute>
             }
           />
 
-          {/* Sessions */}
           <Route
             path="/admin/sessions"
             element={
-              <ProtectedRoute
-                requireAnyPerm={[
-                  "SESSION_READ",
-                  "SESSION_REVOKE",
-                ]}
-              >
+              <ProtectedRoute requireAnyPerms={CONSOLE_PERMS.SESSIONS}>
                 <AdminSessions />
               </ProtectedRoute>
             }
           />
 
-          {/* Audit Logs */}
           <Route
             path="/admin/audit-logs"
             element={
-              <ProtectedRoute requireAnyPerm={["AUDIT_READ"]}>
+              <ProtectedRoute requireAnyPerms={[PERMISSIONS.AUDIT_READ]}>
                 <AdminAuditLogs />
               </ProtectedRoute>
             }
           />
 
-          {/* Temporary Access (JIT) */}
           <Route
             path="/admin/temp-access"
             element={
-              <ProtectedRoute requireAnyPerm={["TEMP_GRANT"]}>
+              <ProtectedRoute requireAnyPerms={[PERMISSIONS.TEMP_GRANT]}>
                 <AdminTempAccess />
               </ProtectedRoute>
             }
@@ -137,7 +111,6 @@ export default function App() {
             <div className="min-h-screen bg-[#0b0f19] text-white flex items-center justify-center">
               <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-6 py-4">
                 <h2 className="text-lg font-semibold">Coming Soon...</h2>
-                {/* <p className="text-white/70 text-sm">Page not found</p> */}
               </div>
             </div>
           }

@@ -1,68 +1,20 @@
 import express from "express";
-import { signup, login } from "../controllers/authController.js";
-import { supabase } from "../lib/SupabaseClient.js";
-import { logAudit } from "../lib/logging.js";
-import { requireAuth } from "../middleware/jwtAuth.js";
+import { signup, login, logout } from "../controllers/authController.js";
+import { auth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// --------------------- SIGNUP ---------------------
 router.post("/signup", signup);
-
-// --------------------- LOGIN ---------------------
 router.post("/login", login);
 
-// --------------------- LOGOUT ---------------------
-router.post("/logout", async (req, res) => {
-  try {
-    const refreshTokenId = req.cookies?.refresh_token_id;
-    const userId = req.body?.userId; // In real use, extract from auth middleware
-    if (refreshTokenId) {
-      await supabase
-        .from("Session")
-        .update({ active: false })
-        .eq("refreshTokenId", refreshTokenId);
-    }
-    if (userId) {
-      logAudit(userId, "LOGOUT", req);
-    }
+// auth(false) so that logout works even if the token is already expired/invalid.
+// When the token IS valid, req.session is populated and we revoke that session.
+router.post("/logout", auth(false), logout);
 
-    res.clearCookie("access_token", { path: "/" });
-    res.clearCookie("refresh_token_id", { path: "/" });
-    return res.json({ message: "Logged out" });
-  } catch (err) {
-    console.error("Logout error:", err);
-    return res.status(500).json({ error: "Logout failed" });
-  }
-});
-
-// --------------------- CURRENT USER ---------------------
-router.get("/me", requireAuth, async (req, res) => {
-  try {
-    const userId = req.auth.userId;
-    const { data, error } = await supabase
-      .from("User")
-      .select("id, email, mfaEnabled, createdAt")
-      .eq("id", userId)
-      .maybeSingle();
-    if (error || !data) return res.status(404).json({ error: "Not found" });
-    return res.json({ user: data });
-  } catch (err) {
-    console.error("/me error:", err);
-    return res.status(500).json({ error: "Failed to fetch profile" });
-  }
-});
-
-// --------------------- PLACEHOLDER ROUTES (to avoid 404 during UI build) ---------------------
-// TODO: Move to dedicated routers/controllers when implementing real logic
-router.get("/sessions", requireAuth, async (req, res) => {
-  // Return empty array or mock until backend implemented
-  return res.json({ sessions: [] });
-});
-
-router.get("/audit-logs", requireAuth, async (req, res) => {
-  // Return empty array or mock until backend implemented
-  return res.json({ logs: [] });
+// /api/auth/me — light profile lookup. The richer profile lives at /api/me
+// (mounted from iamRoutes) and includes roles + permissions + temp grants.
+router.get("/me", auth(true), (req, res) => {
+  return res.json({ user: req.user });
 });
 
 export default router;

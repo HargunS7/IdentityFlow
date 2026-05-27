@@ -1,55 +1,18 @@
 import axios from "axios";
 
-// This module manages only axios logic.
-// AuthContext will inject the token using setAuthToken().
-
-// ---------------------------------------------
-// 1. Create axios instance
-// ---------------------------------------------
+// We rely on the httpOnly access_token cookie set by the backend.
+// `withCredentials: true` makes the browser send + accept cookies on
+// cross-origin XHR requests. Combined with the backend's CORS
+// `credentials: true` + explicit origin allow-list, this is safe.
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
-  withCredentials: false, // We use Bearer token instead of cookies
+  withCredentials: true,
   timeout: 15000,
 });
 
-// ---------------------------------------------
-// 2. Token stored in memory (not read directly from localStorage here)
-// ---------------------------------------------
-let authToken = null;
-
-// Helper so AuthContext can update the token:
-export function setAuthToken(token) {
-  authToken = token;
-
-  if (token) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  } else {
-    delete api.defaults.headers.common["Authorization"];
-  }
-}
-
-// ---------------------------------------------
-// 3. Request interceptor – attaches token if present
-// ---------------------------------------------
-api.interceptors.request.use(
-  (config) => {
-    if (authToken) {
-      config.headers["Authorization"] = `Bearer ${authToken}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// ---------------------------------------------
-// 4. Response interceptor – auto-logout on 401
-// ---------------------------------------------
-//
-// We cannot access AuthContext directly here, so we expose a callback.
-// AuthContext will register logoutHandler() when it initializes.
-// ---------------------------------------------
+// AuthContext registers a callback so we can clear in-memory user state
+// when the backend says the session is gone.
 let logoutCallback = null;
-
 export function registerLogoutHandler(callback) {
   logoutCallback = callback;
 }
@@ -57,9 +20,8 @@ export function registerLogoutHandler(callback) {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) {
-      console.warn("API: received 401, triggering logout…");
-      if (logoutCallback) logoutCallback();
+    if (error?.response?.status === 401 && logoutCallback) {
+      logoutCallback();
     }
     return Promise.reject(error);
   }

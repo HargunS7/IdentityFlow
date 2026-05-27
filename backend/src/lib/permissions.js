@@ -1,5 +1,6 @@
-// Mirrors backend/src/lib/permissions.js.
-// Keep these two files in sync.
+// Central registry of permission codes and role names.
+// Anything that gates an action MUST import from here so the strings
+// stay in lockstep with the seed and the frontend.
 
 export const PERMISSIONS = Object.freeze({
   USER_READ: "USER_READ",
@@ -21,6 +22,7 @@ export const ROLES = Object.freeze({
   USER: "user",
 });
 
+// Groupings used to gate the console pages (any of these unlocks the page).
 export const CONSOLE_PERMS = Object.freeze({
   USERS: [
     PERMISSIONS.ROLE_ASSIGN,
@@ -40,23 +42,3 @@ export const ALL_CONSOLE_PERMS = Object.freeze([
   ...CONSOLE_PERMS.AUDIT,
   ...CONSOLE_PERMS.TEMP,
 ]);
-
-// Helpers
-function permList(permissions) {
-  if (!permissions) return [];
-  return permissions.combined || permissions;
-}
-
-export function hasPerm(permissions, perm) {
-  return permList(permissions).includes(perm);
-}
-
-export function hasAnyPerm(permissions, perms = []) {
-  const list = permList(permissions);
-  return perms.some((p) => list.includes(p));
-}
-
-export function hasAllPerms(permissions, perms = []) {
-  const list = permList(permissions);
-  return perms.every((p) => list.includes(p));
-}

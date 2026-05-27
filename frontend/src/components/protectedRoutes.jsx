@@ -3,6 +3,12 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
 
+/**
+ * Route guard.
+ *  - requireRoles: ANY of these roles unlocks the route.
+ *  - requirePerms: ALL of these perms must be present.
+ *  - requireAnyPerms: ANY of these perms unlocks the route.
+ */
 export default function ProtectedRoute({
   children,
   requireRoles = [],
@@ -12,34 +18,44 @@ export default function ProtectedRoute({
   const { isAuthenticated, loading, roles, permissions } = useAuth();
   const location = useLocation();
 
-  const userRoles = Array.isArray(roles) ? roles : [];
-  const effectivePerms = Array.isArray(permissions?.combined) ? permissions.combined : [];
-
-  if (loading) return null;
+  if (loading) return <AuthLoading />;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  // Role gate (ANY match)
+  const userRoles = Array.isArray(roles) ? roles : [];
+  const effectivePerms = Array.isArray(permissions?.combined)
+    ? permissions.combined
+    : [];
+
   if (requireRoles.length) {
     const ok = requireRoles.some((r) => userRoles.includes(r));
     if (!ok) return <AccessDenied />;
   }
 
-  // Perm gate (ALL required)
   if (requirePerms.length) {
     const ok = requirePerms.every((p) => effectivePerms.includes(p));
     if (!ok) return <AccessDenied />;
   }
 
-  // Perm gate (ANY required)
   if (requireAnyPerms.length) {
     const ok = requireAnyPerms.some((p) => effectivePerms.includes(p));
     if (!ok) return <AccessDenied />;
   }
 
   return children;
+}
+
+function AuthLoading() {
+  return (
+    <div className="min-h-[40vh] w-full flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3 text-white/70">
+        <div className="h-10 w-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        <div className="text-sm">Checking your session…</div>
+      </div>
+    </div>
+  );
 }
 
 function AccessDenied() {

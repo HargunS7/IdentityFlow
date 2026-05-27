@@ -13,7 +13,8 @@ export async function signup(payload) {
  * Login with email/identifier + password
  * payload: { identifier, password }
  *
- * The backend returns: { user: {...}, token: "JWT" }
+ * The backend returns: { user: {...} } and sets httpOnly cookies
+ * (access_token, refresh_token_id). The frontend never sees the JWT.
  */
 export async function login(payload) {
   const res = await api.post("/api/auth/login", payload);
