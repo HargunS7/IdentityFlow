@@ -20,6 +20,7 @@ export const ROLES = Object.freeze({
   SECURITY_ANALYST: "security_analyst",
   AUDITOR: "auditor",
   USER: "user",
+  DEMO: "demo",
 });
 
 // Groupings used to gate the console pages (any of these unlocks the page).

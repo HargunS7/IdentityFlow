@@ -138,16 +138,17 @@ export default function Landing() {
                   Try it instantly
                 </div>
                 <p className="mt-1 text-sm text-white/75 leading-relaxed">
-                  Log in as different roles to see RBAC change what the console
-                  exposes. All demo accounts use the password{" "}
-                  <span className="font-mono text-white">Demo@12345</span>.
+                  Use the <span className="text-white">one-click demo</span> on the
+                  login page (read-only — explore everything safely), or log in as a
+                  specific role to see RBAC limit access. All accounts use the
+                  password <span className="font-mono text-white">Demo@12345</span>.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {[
-                    "admin@example.com",
+                    "demo@example.com",
+                    "auditor@example.com",
                     "manager@example.com",
                     "security@example.com",
-                    "auditor@example.com",
                     "user@example.com",
                   ].map((e) => (
                     <span

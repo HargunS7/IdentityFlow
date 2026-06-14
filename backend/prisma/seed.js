@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 // Roles and permissions. Keep PERMISSIONS in lockstep with
 // backend/src/lib/permissions.js (the runtime registry).
-const ROLES = ["admin", "manager", "security_analyst", "auditor", "user"];
+const ROLES = ["admin", "manager", "security_analyst", "auditor", "user", "demo"];
 
 const PERMISSIONS = [
   "USER_READ",
@@ -25,6 +25,9 @@ const ROLE_PERMISSIONS = {
   security_analyst: ["AUDIT_READ", "SESSION_READ", "SESSION_REVOKE"],
   auditor: ["AUDIT_READ"],
   user: ["USER_READ"],
+  // Public one-click demo: can SEE every console page + try the self-expiring
+  // JIT flow, but holds NO destructive permission (no delete/revoke/role-assign).
+  demo: ["USER_READ", "SESSION_READ", "AUDIT_READ", "TEMP_GRANT"],
 };
 
 // Demo users — one per role so reviewers can log in and SEE how RBAC changes
@@ -37,6 +40,7 @@ const DEMO_USERS = [
   { email: "security@example.com", role: "security_analyst" },
   { email: "auditor@example.com", role: "auditor" },
   { email: "user@example.com", role: "user" },
+  { email: "demo@example.com", role: "demo" },
 ];
 
 async function main() {

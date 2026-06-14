@@ -6,7 +6,10 @@ import { Button, Input, Field } from "../components/ui.jsx";
 
 // Public demo account — lets a visitor explore the full console with no
 // signup. Override via env if your demo account differs.
-const DEMO_IDENTIFIER = import.meta.env.VITE_DEMO_EMAIL || "admin@example.com";
+// NOTE: these are intentionally PUBLIC sandbox credentials (also shown on the
+// landing page) — not a secret. The demo account holds a scoped, read-only
+// `demo` role (no destructive permissions), so a one-click public login is safe.
+const DEMO_IDENTIFIER = import.meta.env.VITE_DEMO_EMAIL || "demo@example.com";
 const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "Demo@12345";
 
 export default function LoginPage() {
@@ -136,7 +139,8 @@ export default function LoginPage() {
         {demoLoading ? "Entering demo…" : "Explore the live demo — no account needed"}
       </Button>
       <p className="mt-2 text-[11px] text-white/45 text-center">
-        Signs you in as a shared demo admin. Please be gentle — it's a public sandbox.
+        Signs you in as a read-only demo account — explore every page, no
+        destructive actions. Shared public sandbox.
       </p>
 
       <div className="mt-6 text-sm text-white/60">

@@ -19,6 +19,7 @@ export const ROLES = Object.freeze({
   SECURITY_ANALYST: "security_analyst",
   AUDITOR: "auditor",
   USER: "user",
+  DEMO: "demo",
 });
 
 export const CONSOLE_PERMS = Object.freeze({

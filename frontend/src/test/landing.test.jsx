@@ -33,6 +33,6 @@ describe("Landing page", () => {
   it("shows demo credentials so reviewers can log in", () => {
     renderLanding();
     expect(screen.getByText("Demo@12345")).toBeInTheDocument();
-    expect(screen.getByText("admin@example.com")).toBeInTheDocument();
+    expect(screen.getByText("demo@example.com")).toBeInTheDocument();
   });
 });
