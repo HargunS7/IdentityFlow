@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { AnimatedFlow } from "../components/flows.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -91,9 +92,18 @@ const FLOWS = [
 export default function Concepts() {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
+  const isAuthed = !!useAuth()?.user;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-12 pb-20">
+      {/* Back — public pages have no navbar, so always offer a way out. */}
+      <button
+        onClick={() => navigate(isAuthed ? "/dashboard" : "/")}
+        className="mb-4 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm text-white/70 hover:text-white hover:bg-white/5 border border-white/10 transition"
+      >
+        ← Back to {isAuthed ? "dashboard" : "home"}
+      </button>
+
       {/* Header */}
       <motion.div
         initial={reduce ? false : "hidden"}

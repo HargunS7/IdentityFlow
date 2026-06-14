@@ -7,7 +7,10 @@ import axios from "axios";
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
   withCredentials: true,
-  timeout: 15000,
+  // 30s: a free-tier backend (e.g. Render) can take ~50s to wake from a cold
+  // start. An uptime pinger on /health keeps it warm; this just stops the
+  // first request from failing while it boots. Tune with VITE_API_TIMEOUT.
+  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
 });
 
 // AuthContext registers a callback so we can clear in-memory user state

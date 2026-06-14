@@ -4,6 +4,11 @@ import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
 import { Button, Input, Field } from "../components/ui.jsx";
 
+// Public demo account — lets a visitor explore the full console with no
+// signup. Override via env if your demo account differs.
+const DEMO_IDENTIFIER = import.meta.env.VITE_DEMO_EMAIL || "admin@example.com";
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "Demo@12345";
+
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -14,6 +19,7 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -26,6 +32,23 @@ export default function LoginPage() {
       setError(err?.response?.data?.error || "Invalid credentials");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDemo() {
+    setError("");
+    setDemoLoading(true);
+    try {
+      await login({ identifier: DEMO_IDENTIFIER, password: DEMO_PASSWORD });
+      navigate("/dashboard");
+    } catch (err) {
+      setError(
+        err?.code === "ECONNABORTED"
+          ? "The demo server is waking up — give it a few seconds and try again."
+          : "Demo login is unavailable right now. Try again shortly."
+      );
+    } finally {
+      setDemoLoading(false);
     }
   }
 
@@ -95,6 +118,26 @@ export default function LoginPage() {
           {submitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
+
+      {/* One-click demo — no credentials needed */}
+      <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-white/35">
+        <span className="h-px flex-1 bg-white/10" />
+        or
+        <span className="h-px flex-1 bg-white/10" />
+      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="lg"
+        className="w-full"
+        loading={demoLoading}
+        onClick={handleDemo}
+      >
+        {demoLoading ? "Entering demo…" : "Explore the live demo — no account needed"}
+      </Button>
+      <p className="mt-2 text-[11px] text-white/45 text-center">
+        Signs you in as a shared demo admin. Please be gentle — it's a public sandbox.
+      </p>
 
       <div className="mt-6 text-sm text-white/60">
         Don't have an account?{" "}
