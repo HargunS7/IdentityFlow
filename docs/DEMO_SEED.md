@@ -30,8 +30,13 @@ drop trigger if exists set_timestamp_role on public."Role";
 
 ## Section 1 — Create the scoped `demo` role
 
+> `Role.id` has **no database default** — Prisma's `@default(uuid())` generates
+> the id in application code, not in Postgres. So a raw SQL insert must supply
+> `id` explicitly. (`Permission`, `RolePermission`, `UserRole`, and `User` use
+> DB-level UUID defaults, so their inserts omit `id`.)
+
 ```sql
-insert into "Role"(name) values ('demo')
+insert into "Role"(id, name) values (gen_random_uuid(), 'demo')
 on conflict (name) do nothing;
 ```
 
