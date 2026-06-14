@@ -100,3 +100,13 @@ export async function revokeTempPermission(payload) {
   const res = await api.post("/api/admin/temp-permissions/revoke", payload);
   return res.data;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                   DEMO                                     */
+/* -------------------------------------------------------------------------- */
+
+// Admin-only: restore demo accounts + clear visitor-created temp grants.
+export async function resetDemoData() {
+  const res = await api.post("/api/admin/reset-demo");
+  return res.data;
+}

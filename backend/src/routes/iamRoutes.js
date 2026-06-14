@@ -29,6 +29,7 @@ import {
 } from "../controllers/iamTempPermController.js";
 
 import { getSummary } from "../controllers/iamSummaryController.js";
+import { resetDemo } from "../controllers/iamDemoController.js";
 
 const router = express.Router();
 
@@ -54,6 +55,15 @@ router.get(
     PERMISSIONS.TEMP_GRANT
   ),
   getSummary
+);
+
+// POST /api/admin/reset-demo — admin-only; restores demo accounts + clears
+// visitor-created temp grants via the DB reset_demo() function.
+router.post(
+  "/admin/reset-demo",
+  auth(true),
+  requireRoles(ROLES.ADMIN),
+  resetDemo
 );
 
 /* -------------------------------------------------------------------------- */

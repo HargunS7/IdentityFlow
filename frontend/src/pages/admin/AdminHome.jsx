@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { useAuth } from "../../context/AuthContext.jsx";
 import { PERMISSIONS, ROLES, hasAnyPerm } from "../../utils/permissions.js";
-import { useAdminSummary } from "../../services/queries.js";
+import { useAdminSummary, useResetDemo } from "../../services/queries.js";
 
 import {
   PageHeader,
@@ -16,6 +16,7 @@ import {
   Chip,
   Skeleton,
   Breadcrumbs,
+  ConfirmDialog,
 } from "../../components/ui.jsx";
 import { BarChart, ColumnChart, DonutChart } from "../../components/charts.jsx";
 import { formatRelative } from "../../utils/format.js";
@@ -55,6 +56,9 @@ export default function AdminHome() {
       PERMISSIONS.TEMP_GRANT,
     ]),
   });
+
+  const resetM = useResetDemo();
+  const [showReset, setShowReset] = useState(false);
 
   const modules = [
     {
@@ -118,11 +122,18 @@ export default function AdminHome() {
               : `You're signed in as ${username}. Available modules depend on your current permissions (including temporary grants).`
           }
           actions={
-            visible[0] && (
-              <Button onClick={() => navigate(visible[0].to)}>
-                Open {visible[0].title} →
-              </Button>
-            )
+            <>
+              {visible[0] && (
+                <Button onClick={() => navigate(visible[0].to)}>
+                  Open {visible[0].title} →
+                </Button>
+              )}
+              {isAdmin && (
+                <Button variant="ghost" onClick={() => setShowReset(true)}>
+                  Reset demo data
+                </Button>
+              )}
+            </>
           }
         />
       </motion.div>
@@ -406,6 +417,20 @@ export default function AdminHome() {
           </p>
         </Card>
       </motion.div>
+
+      <ConfirmDialog
+        open={showReset}
+        title="Reset demo data?"
+        description="Restores all demo accounts (admin/manager/security/auditor/user/demo) to their default password and role, and clears any temporary grants visitors created. Audit logs and signups are left untouched."
+        confirmLabel="Reset demo"
+        variant="primary"
+        loading={resetM.isPending}
+        onClose={() => !resetM.isPending && setShowReset(false)}
+        onConfirm={async () => {
+          await resetM.mutateAsync();
+          setShowReset(false);
+        }}
+      />
     </motion.div>
   );
 }

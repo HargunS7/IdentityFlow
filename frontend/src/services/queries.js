@@ -23,6 +23,7 @@ import {
   grantTempPermission,
   listTempPermissions,
   revokeTempPermission,
+  resetDemoData,
 } from "./adminService.js";
 
 import { getAdminSummary, getMe } from "./iamService.js";
@@ -220,6 +221,19 @@ export function useRevokeSession() {
       qc.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
       qc.invalidateQueries({ queryKey: qk.summary });
     },
+  });
+}
+
+// Demo reset (admin only) — invalidate everything so the UI reflects the reset.
+export function useResetDemo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: resetDemoData,
+    onSuccess: (data) => {
+      toast.success(data?.message || "Demo data reset");
+      qc.invalidateQueries();
+    },
+    onError: (err) => toast.error(errMsg(err, "Reset failed")),
   });
 }
 
