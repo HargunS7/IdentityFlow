@@ -1,10 +1,22 @@
-#backend
+#env files — never commit real secrets. .env.example templates ARE committed.
+.env
+.env.*
+!.env.example
 backend/.env
-backend/node_modules
-
-#frontend
+backend/.env.*
+!backend/.env.example
 frontend/.env
-frontend/node_modules
+frontend/.env.*
+!frontend/.env.example
 
-#claude
+#dependencies / build
+backend/node_modules
+frontend/node_modules
+frontend/dist
+backend/dist
+
+#claude / AI tooling
 .claude
+.mcp.json
+.agents
+skills-lock.json

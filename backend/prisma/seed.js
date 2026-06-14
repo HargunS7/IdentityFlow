@@ -2,7 +2,8 @@ const { PrismaClient } = require("@prisma/client");
 const argon2 = require("argon2");
 const prisma = new PrismaClient();
 
-// Define roles and permissions
+// Roles and permissions. Keep PERMISSIONS in lockstep with
+// backend/src/lib/permissions.js (the runtime registry).
 const ROLES = ["admin", "manager", "security_analyst", "auditor", "user"];
 
 const PERMISSIONS = [
@@ -14,36 +15,55 @@ const PERMISSIONS = [
   "AUDIT_READ",
   "SESSION_READ",
   "SESSION_REVOKE",
+  "TEMP_GRANT", // <-- was missing; required for the Temporary Access feature
+];
+
+// Per-role permission grants. `admin` gets everything.
+const ROLE_PERMISSIONS = {
+  admin: PERMISSIONS,
+  manager: ["USER_READ", "USER_UPDATE"],
+  security_analyst: ["AUDIT_READ", "SESSION_READ", "SESSION_REVOKE"],
+  auditor: ["AUDIT_READ"],
+  user: ["USER_READ"],
+};
+
+// Demo users — one per role so reviewers can log in and SEE how RBAC changes
+// what the console exposes. Password is shared and overridable via env so it
+// is never hardcoded for a real deployment.
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "Demo@12345";
+const DEMO_USERS = [
+  { email: "admin@example.com", role: "admin" },
+  { email: "manager@example.com", role: "manager" },
+  { email: "security@example.com", role: "security_analyst" },
+  { email: "auditor@example.com", role: "auditor" },
+  { email: "user@example.com", role: "user" },
 ];
 
 async function main() {
-  // 1. Create all permissions
+  // 1. Permissions
   const permissionRecords = {};
   for (const code of PERMISSIONS) {
-    const perm = await prisma.permission.upsert({
+    permissionRecords[code] = await prisma.permission.upsert({
       where: { code },
       update: {},
       create: { code },
     });
-    permissionRecords[code] = perm;
   }
 
-  // 2. Create all roles
+  // 2. Roles
   const roleRecords = {};
   for (const name of ROLES) {
-    const role = await prisma.role.upsert({
+    roleRecords[name] = await prisma.role.upsert({
       where: { name },
       update: {},
       create: { name },
     });
-    roleRecords[name] = role;
   }
 
-  // 3. Attach permissions to roles
-  // Helper function to assign permissions to a role
-  async function assignPermissions(roleName, permCodes) {
+  // 3. Role → permission mapping
+  for (const [roleName, codes] of Object.entries(ROLE_PERMISSIONS)) {
     const role = roleRecords[roleName];
-    for (const code of permCodes) {
+    for (const code of codes) {
       await prisma.rolePermission.upsert({
         where: {
           roleId_permissionId: {
@@ -52,57 +72,31 @@ async function main() {
           },
         },
         update: {},
-        create: {
-          roleId: role.id,
-          permissionId: permissionRecords[code].id,
-        },
+        create: { roleId: role.id, permissionId: permissionRecords[code].id },
       });
     }
   }
 
-  // Admin → all permissions
-  await assignPermissions("admin", PERMISSIONS);
-
-  // Manager → manage users
-  await assignPermissions("manager", ["USER_READ", "USER_UPDATE"]);
-
-  // Security analyst → audit + sessions
-  await assignPermissions("security_analyst", ["AUDIT_READ", "SESSION_READ"]);
-
-  // Auditor → read-only audit
-  await assignPermissions("auditor", ["AUDIT_READ"]);
-
-  // Normal user → basic read
-  await assignPermissions("user", ["USER_READ"]);
-
-  // 4. Create a default admin user
-  const adminEmail = "admin@example.com";
-  const adminPass = "Admin@12345"; // ⚠️ Change this later!
-  const hash = await argon2.hash(adminPass, { type: argon2.argon2id });
-
-  const user = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: { email: adminEmail, passwordHash: hash },
-  });
-
-  // 5. Attach admin role to admin user
-  await prisma.userRole.upsert({
-    where: {
-      userId_roleId: {
-        userId: user.id,
-        roleId: roleRecords["admin"].id,
+  // 4. Demo users (one per role)
+  const passwordHash = await argon2.hash(DEMO_PASSWORD, { type: argon2.argon2id });
+  for (const { email, role } of DEMO_USERS) {
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: { email, passwordHash },
+    });
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: { userId: user.id, roleId: roleRecords[role].id },
       },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      roleId: roleRecords["admin"].id,
-    },
-  });
+      update: {},
+      create: { userId: user.id, roleId: roleRecords[role].id },
+    });
+  }
 
   console.log("✅ Seed complete");
-  console.log("Default Admin:", adminEmail, "Password:", adminPass);
+  console.log("Demo users (password:", DEMO_PASSWORD + "):");
+  for (const u of DEMO_USERS) console.log(`  ${u.role.padEnd(16)} ${u.email}`);
 }
 
 main()

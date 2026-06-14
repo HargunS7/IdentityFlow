@@ -94,6 +94,75 @@ export default function Landing() {
           </motion.div>
         </motion.div>
 
+        {/* WHO IT'S FOR */}
+        <section className="mt-14">
+          <SectionHeader
+            eyebrow="WHO IT'S FOR"
+            title="One live system, four kinds of learner"
+            desc="This isn't a slideshow — it's a working IAM system you can poke at. Here's how each person gets value."
+          />
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <AudienceCard
+              tag="Students"
+              title="Learn by doing"
+              desc="Explore auth, RBAC, sessions, audit logs, and JIT access, and watch each flow happen in real time as you click."
+            />
+            <AudienceCard
+              tag="Teachers"
+              title="Demo live in class"
+              desc="Assign a role, revoke a session, or grant 5-minute access in front of students and show the effect instantly."
+            />
+            <AudienceCard
+              tag="Recruiters"
+              title="See real depth"
+              desc="A custom auth + RBAC system with sessions, audit logging, and least-privilege design — not a tutorial clone."
+            />
+            <AudienceCard
+              tag="Developers"
+              title="Reference design"
+              desc="A clean Express + Prisma implementation: httpOnly-cookie JWTs, session-aware auth, permission-gated routes."
+            />
+          </div>
+
+          {/* Demo credentials callout */}
+          <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.14em] text-emerald-300/80">
+                  Try it instantly
+                </div>
+                <p className="mt-1 text-sm text-white/75 leading-relaxed">
+                  Log in as different roles to see RBAC change what the console
+                  exposes. All demo accounts use the password{" "}
+                  <span className="font-mono text-white">Demo@12345</span>.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {[
+                    "admin@example.com",
+                    "manager@example.com",
+                    "security@example.com",
+                    "auditor@example.com",
+                    "user@example.com",
+                  ].map((e) => (
+                    <span
+                      key={e}
+                      className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/75 font-mono"
+                    >
+                      {e}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => navigate("/login")}
+                className="shrink-0 rounded-2xl px-5 py-3 text-sm font-semibold text-black bg-white hover:bg-white/90 transition shadow"
+              >
+                Log in as a demo user →
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* HOW IT WORKS — visual flow */}
         <section className="mt-14">
           <SectionHeader
@@ -275,6 +344,22 @@ function FeatureCard({ tag, title, desc }) {
         </span>
       </div>
       <p className="mt-2 text-sm text-white/70 leading-relaxed">{desc}</p>
+    </motion.div>
+  );
+}
+
+function AudienceCard({ tag, title, desc }) {
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 220, damping: 18 }}
+      className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-md flex flex-col"
+    >
+      <span className="self-start text-[11px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/70">
+        {tag}
+      </span>
+      <div className="mt-3 text-sm font-semibold text-white">{title}</div>
+      <p className="mt-1.5 text-sm text-white/70 leading-relaxed">{desc}</p>
     </motion.div>
   );
 }

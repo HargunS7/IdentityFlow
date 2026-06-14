@@ -22,12 +22,30 @@ function signAccessToken({ userId, sessionId }) {
 }
 
 function cookieOptions() {
+  const isProd = process.env.NODE_ENV === "production";
+  // When the frontend and backend are on DIFFERENT domains (typical for a
+  // public deploy, e.g. frontend on Vercel + backend on Render), the browser
+  // only sends the auth cookie cross-site if SameSite=None; Secure. Same-site
+  // deploys can override to "lax" via COOKIE_SAMESITE.
+  const sameSite = process.env.COOKIE_SAMESITE || (isProd ? "none" : "lax");
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    // SameSite=None is rejected by browsers unless Secure is also set.
+    secure: isProd || sameSite === "none",
+    sameSite,
     path: "/",
+    // Optional: scope cookies to a shared parent domain (e.g. ".example.com").
+    ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
   };
+}
+
+// Clearing a cookie must use the same attributes it was set with (notably
+// path/domain), otherwise the browser keeps the original.
+function clearAuthCookies(res) {
+  const { httpOnly, secure, sameSite, path, domain } = cookieOptions();
+  const base = { httpOnly, secure, sameSite, path, ...(domain ? { domain } : {}) };
+  res.clearCookie("access_token", base);
+  res.clearCookie("refresh_token_id", base);
 }
 
 function setAuthCookies(res, accessToken, refreshTokenId) {
@@ -230,8 +248,7 @@ export const logout = async (req, res) => {
       logAudit(userId, "LOGOUT", req, { sessionId });
     }
 
-    res.clearCookie("access_token", { path: "/" });
-    res.clearCookie("refresh_token_id", { path: "/" });
+    clearAuthCookies(res);
     return res.json({ message: "Logged out" });
   } catch (err) {
     console.error("Logout error:", err);
