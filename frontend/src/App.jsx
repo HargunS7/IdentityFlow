@@ -7,6 +7,7 @@ import AuthLayout from "./layouts/authLayout.jsx";
 import AppLayout from "./layouts/appLayout.jsx";
 
 import ProtectedRoute from "./components/protectedRoutes.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { Spinner } from "./components/ui.jsx";
 
 import {
@@ -15,20 +16,42 @@ import {
   ALL_CONSOLE_PERMS,
 } from "./utils/permissions.js";
 
-// All pages are code-split. The route loading state shows a centered spinner.
-const Landing       = lazy(() => import("./pages/landing.jsx"));
-const LearnIAM      = lazy(() => import("./pages/learnIAM.jsx"));
-const Concepts      = lazy(() => import("./pages/concepts.jsx"));
-const Login         = lazy(() => import("./pages/login.jsx"));
-const Signup        = lazy(() => import("./pages/signup.jsx"));
-const Dashboard     = lazy(() => import("./pages/dashboard.jsx"));
-const Account       = lazy(() => import("./pages/accounts.jsx"));
+// Lazy import that survives stale chunks after a redeploy. When Vercel ships a
+// new build, an open tab on the old build references old hashed chunk names
+// that 404 — the dynamic import() then rejects and blanks the screen. Here we
+// reload once to fetch the fresh index.html + chunks; a short time-guard
+// prevents reload loops if the chunk genuinely can't load.
+function lazyWithReload(factory) {
+  return lazy(async () => {
+    try {
+      return await factory();
+    } catch (err) {
+      const KEY = "chunkReloadAt";
+      const last = Number(sessionStorage.getItem(KEY) || 0);
+      if (Date.now() - last > 10000) {
+        sessionStorage.setItem(KEY, String(Date.now()));
+        window.location.reload();
+        return new Promise(() => {}); // hang render until the reload happens
+      }
+      throw err; // reloaded very recently — let the ErrorBoundary take over
+    }
+  });
+}
 
-const AdminHome      = lazy(() => import("./pages/admin/AdminHome.jsx"));
-const AdminUsers     = lazy(() => import("./pages/admin/AdminUsers.jsx"));
-const AdminSessions  = lazy(() => import("./pages/admin/AdminSessions.jsx"));
-const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs.jsx"));
-const AdminTempAccess = lazy(() => import("./pages/admin/AdminTempAccess.jsx"));
+// All pages are code-split. The route loading state shows a centered spinner.
+const Landing       = lazyWithReload(() => import("./pages/landing.jsx"));
+const LearnIAM      = lazyWithReload(() => import("./pages/learnIAM.jsx"));
+const Concepts      = lazyWithReload(() => import("./pages/concepts.jsx"));
+const Login         = lazyWithReload(() => import("./pages/login.jsx"));
+const Signup        = lazyWithReload(() => import("./pages/signup.jsx"));
+const Dashboard     = lazyWithReload(() => import("./pages/dashboard.jsx"));
+const Account       = lazyWithReload(() => import("./pages/accounts.jsx"));
+
+const AdminHome      = lazyWithReload(() => import("./pages/admin/AdminHome.jsx"));
+const AdminUsers     = lazyWithReload(() => import("./pages/admin/AdminUsers.jsx"));
+const AdminSessions  = lazyWithReload(() => import("./pages/admin/AdminSessions.jsx"));
+const AdminAuditLogs = lazyWithReload(() => import("./pages/admin/AdminAuditLogs.jsx"));
+const AdminTempAccess = lazyWithReload(() => import("./pages/admin/AdminTempAccess.jsx"));
 
 function RouteFallback() {
   return (
@@ -56,9 +79,11 @@ function PageTransition({ children }) {
 }
 
 function AppRoutes() {
+  const location = useLocation();
   return (
     <PageTransition>
-      <Suspense fallback={<RouteFallback />}>
+      <ErrorBoundary key={location.pathname}>
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* PUBLIC */}
           <Route element={<PublicLayout />}>
@@ -148,7 +173,8 @@ function AppRoutes() {
             }
           />
         </Routes>
-      </Suspense>
+        </Suspense>
+      </ErrorBoundary>
     </PageTransition>
   );
 }
