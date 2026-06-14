@@ -119,10 +119,15 @@ to restore the demo to a clean state.
 
 ---
 
-## Optional: self-healing schedule (auto-reset)
+## Optional: self-healing schedule (idle-aware auto-reset)
 
-Makes the demo restore itself on a timer — no manual work if a visitor changes
-something. Runs entirely inside Postgres (works even while the backend sleeps).
+Makes the demo restore itself **only after a period of no activity** — so an
+active lesson is never interrupted. "Activity" = the most recent login or
+audited action (logins, role changes, session revokes, temp grants/revokes all
+write to `AuditLog`). If someone is actively using the demo, the idle clock
+keeps resetting and nothing is wiped; the demo only self-heals once it's been
+left untouched for the threshold (default 60 min). Runs entirely inside Postgres
+(works even while the backend sleeps).
 
 ### Section 6 — Enable the scheduler
 
@@ -133,9 +138,44 @@ create extension if not exists pg_cron;
 > If this errors with a permissions message, enable **pg_cron** in
 > *Supabase Dashboard → Database → Extensions*, then continue.
 
-### Section 7 — Schedule the reset (every 30 minutes)
+### Section 7 — Create the idle-aware guard function
 
-Safe to re-run — it drops any existing job of the same name first.
+Resets **only** if there's been no login/audited activity for `idle_minutes`
+(default 60). The manual admin "Reset demo data" button still forces an
+immediate reset via `reset_demo()` directly — this guard is just for the timer.
+
+```sql
+create or replace function public.reset_demo_if_idle(idle_minutes int default 60)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  la_audit timestamptz;
+  la_sess  timestamptz;
+  last_activity timestamptz;
+begin
+  -- AuditLog/Session store UTC in `timestamp without time zone`; cast to tz.
+  select max("createdAt") at time zone 'UTC' into la_audit from "AuditLog";
+  select max("createdAt") at time zone 'UTC' into la_sess  from "Session";
+
+  last_activity := greatest(
+    coalesce(la_audit, 'epoch'::timestamptz),
+    coalesce(la_sess,  'epoch'::timestamptz)
+  );
+
+  if last_activity < now() - make_interval(mins => idle_minutes) then
+    perform public.reset_demo();
+  end if;
+end
+$fn$;
+```
+
+### Section 8 — Schedule the idle check
+
+Checks every 15 minutes, but only resets after 60 idle minutes. Safe to re-run
+(drops any existing job of the same name first).
 
 ```sql
 do $do$
@@ -145,11 +185,11 @@ exception when others then null;
 end
 $do$;
 
-select cron.schedule('reset-demo', '*/30 * * * *', $cron$ select public.reset_demo(); $cron$);
+select cron.schedule('reset-demo', '*/15 * * * *', $cron$ select public.reset_demo_if_idle(60); $cron$);
 ```
 
-Change `*/30 * * * *` to `0 * * * *` for hourly, or `*/15 * * * *` for every
-15 minutes.
+Tune it: change `60` for a different idle window, or `*/15 * * * *` for how
+often it checks (e.g. `*/5 * * * *` to check every 5 minutes).
 
 ### Manage / inspect the schedule
 

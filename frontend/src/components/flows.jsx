@@ -1,5 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { motion, useReducedMotion, useInView } from "framer-motion";
+
+// Time each step stays highlighted before advancing (ms). Higher = slower.
+const STEP_MS = 1150;
 
 /**
  * AnimatedFlow — a self-playing, step-by-step diagram used to teach an IAM
@@ -18,6 +21,9 @@ import { motion, useReducedMotion } from "framer-motion";
  */
 export function AnimatedFlow({ title, subtitle, steps = [], note, tone = "ok" }) {
   const reduce = useReducedMotion();
+  const ref = useRef(null);
+  // Start the sequence only once this flow scrolls into view.
+  const inView = useInView(ref, { once: true, amount: 0.3 });
   const [active, setActive] = useState(reduce ? steps.length : 0);
   const [runId, setRunId] = useState(0);
 
@@ -26,21 +32,23 @@ export function AnimatedFlow({ title, subtitle, steps = [], note, tone = "ok" })
       setActive(steps.length);
       return;
     }
+    // Wait until scrolled into view; a manual Replay (runId>0) always runs.
+    if (!inView && runId === 0) return;
     setActive(0);
     let i = 0;
     const timer = setInterval(() => {
       i += 1;
       setActive(i);
       if (i >= steps.length) clearInterval(timer);
-    }, 700);
+    }, STEP_MS);
     return () => clearInterval(timer);
-  }, [steps.length, reduce, runId]);
+  }, [steps.length, reduce, runId, inView]);
 
   const replay = useCallback(() => setRunId((r) => r + 1), []);
   const finalTone = tone === "deny" ? "deny" : "ok";
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 md:p-7">
+    <div ref={ref} className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 md:p-7">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-white">{title}</h3>
