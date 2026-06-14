@@ -1,0 +1,33 @@
+# Render Blueprint for the Express + Prisma backend.
+# In Render: New → Blueprint → point at this repo. The frontend is NOT here —
+# it deploys separately to Vercel.
+#
+# Secrets (sync: false) must be filled in the Render dashboard after the first
+# deploy; they are intentionally NOT stored in git.
+services:
+  - type: web
+    name: identityflow-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    # prisma generate must run at build so @prisma/client exists at runtime.
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm start
+    # The uptime pinger should hit this path to keep the free instance warm.
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      # Fill these in the Render dashboard (never commit real secrets):
+      - key: DATABASE_URL        # Supabase POOLED connection (port 6543)
+        sync: false
+      - key: DIRECT_URL          # Supabase DIRECT connection (port 5432)
+        sync: false
+      - key: JWT_SECRET          # fresh ≥32-byte random string for production
+        sync: false
+      - key: FRONTEND_ORIGIN     # exact Vercel URL, e.g. https://identityflow.vercel.app
+        sync: false
+    # Render injects PORT automatically; server.js already reads process.env.PORT.

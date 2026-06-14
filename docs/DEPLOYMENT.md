@@ -54,27 +54,61 @@ These can't be done from code — do them in the Supabase dashboard:
 
 ---
 
-## 3. Backend hosting (Render / Railway / Fly / etc.)
+## 3. Backend on Render (free tier)
 
-- Set env vars (see README): `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET` (generate
-  a fresh ≥32-byte secret for prod), `FRONTEND_ORIGIN` (exact deployed frontend
-  URL), `NODE_ENV=production`.
-- `NODE_ENV=production` automatically: forces `Secure` cookies, disables debug
-  routes (`/debug/*`), and rejects a weak `JWT_SECRET`.
-- The app already calls `app.set("trust proxy", 1)` — required behind a hosting
-  proxy so `Secure` cookies and client IPs work.
-- **Cookies across domains:** if frontend and backend are on different domains
-  (the usual case), keep the default `COOKIE_SAMESITE=none` (prod default).
-  Cross-site cookies require `SameSite=None; Secure`, which the backend sets
-  automatically in production. Only set `COOKIE_SAMESITE=lax` if they share a site.
-- Start command: `npm start` (runs `node src/server.js`).
+A `render.yaml` blueprint is included. Either use it (Render → New → Blueprint →
+this repo) or create a Web Service manually with:
 
-## 4. Frontend hosting (Vercel / Netlify / static)
+- **Root directory:** `backend`
+- **Build command:** `npm install && npx prisma generate`
+- **Start command:** `npm start`
+- **Health check path:** `/health`
+- **Env vars** (dashboard, never committed): `DATABASE_URL` (Supabase **pooled**,
+  port 6543), `DIRECT_URL` (port 5432), `JWT_SECRET` (fresh ≥32-byte random),
+  `FRONTEND_ORIGIN` (exact Vercel URL), `NODE_ENV=production`. `PORT` is injected
+  by Render — don't set it.
 
-- Build: `npm run build` (output in `frontend/dist`).
-- Env: `VITE_API_URL` = the deployed backend URL. **No secrets** — Vite inlines
-  all `VITE_` vars into the public bundle.
-- Ensure the deployed frontend URL exactly matches the backend `FRONTEND_ORIGIN`.
+What `NODE_ENV=production` buys you automatically: `Secure` cookies, debug routes
+(`/debug/*`) disabled, and a weak `JWT_SECRET` rejected at boot. `trust proxy` is
+already set, so Secure cookies and client IPs work behind Render's proxy.
+
+**Cookies across domains:** Vercel (`*.vercel.app`) and Render (`*.onrender.com`)
+are different domains, so the browser only sends the auth cookie if it's
+`SameSite=None; Secure` — which the backend sets automatically in production. No
+action needed; just don't override `COOKIE_SAMESITE` to `lax`.
+
+### Keeping the free instance awake (uptime pinger)
+Render's free tier spins down after ~15 min idle; the next request then pays a
+~50s cold start. To avoid that:
+
+- Point an uptime monitor (UptimeRobot, cron-job.org, BetterStack…) at
+  `https://<your-api>.onrender.com/health` on a **~10-minute** interval.
+- `/health` is a cheap JSON endpoint built for exactly this.
+- One always-on free service fits within Render's 750 instance-hours/month
+  (a month is ~730h), so a single backend stays free.
+
+⚠️ **Cold-start vs. request timeout:** the frontend's axios timeout is **15s**
+(`frontend/src/utils/api.js`). If a *cold* backend is hit (pinger lapsed, or right
+after a deploy), the first login can exceed 15s and fail with a confusing error.
+The uptime pinger is the real fix. If you want a safety margin for the very first
+visitor, bump that `timeout` to ~30000.
+
+## 4. Frontend on Vercel
+
+A `frontend/vercel.json` is included (framework `vite`, output `dist`, and an SPA
+rewrite so deep links like `/concepts` or `/admin` don't 404 on refresh).
+
+- **Root directory:** `frontend` (set this in the Vercel project settings).
+- **Env var:** `VITE_API_URL` = your Render backend URL
+  (`https://<your-api>.onrender.com`). **No secrets** — Vite inlines every
+  `VITE_` var into the public bundle.
+- After the first deploy, copy the Vercel production URL into the backend's
+  `FRONTEND_ORIGIN` and redeploy the backend.
+
+⚠️ **Vercel preview URLs + CORS:** the backend allows a *single* exact origin
+(`FRONTEND_ORIGIN`). Vercel preview deployments get unique URLs, so auth won't
+work from a preview — test login on the **production** Vercel URL (or extend the
+CORS config to allow a list/regex of origins if you need previews to log in).
 
 ---
 
@@ -121,8 +155,11 @@ These can't be done from code — do them in the Supabase dashboard:
 
 ## 8. Public-hosting checklist
 
-- [ ] Backend deployed, `/health` returns ok.
-- [ ] Frontend deployed, `VITE_API_URL` points at the backend.
-- [ ] Login works end-to-end in the deployed environment (cookie is sent cross-site).
+- [ ] Backend deployed on Render, `/health` returns ok.
+- [ ] Frontend deployed on Vercel, `VITE_API_URL` points at the Render backend.
+- [ ] Backend `FRONTEND_ORIGIN` set to the exact Vercel production URL (then redeploy).
+- [ ] Uptime monitor pinging `/health` every ~10 min (keeps the free instance warm).
+- [ ] Login works end-to-end on the **production** Vercel URL (cookie sent cross-site).
+- [ ] Deep-link refresh works (e.g. open `/concepts` directly) — confirms the SPA rewrite.
 - [ ] Demo users seeded and documented.
 - [ ] Rate limiting active on `/api/auth` (already configured).
