@@ -15,6 +15,19 @@ Verified against the live schema:
 
 ---
 
+## Section 0 — One-time fix: drop a broken trigger on `Role`
+
+If inserting a role fails with
+`record "new" has no field "createdAt"`, it's because the `set_timestamp()`
+trigger was mistakenly attached to `Role` — but `Role` has no
+`createdAt`/`updatedAt` columns (only `User` does). This is unrelated to RLS.
+Drop the misapplied trigger (safe — `Role` has no timestamps; the correct
+`set_timestamp_user` trigger on `User` is untouched):
+
+```sql
+drop trigger if exists set_timestamp_role on public."Role";
+```
+
 ## Section 1 — Create the scoped `demo` role
 
 ```sql
