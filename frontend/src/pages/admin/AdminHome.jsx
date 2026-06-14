@@ -17,7 +17,21 @@ import {
   Skeleton,
   Breadcrumbs,
 } from "../../components/ui.jsx";
+import { BarChart, ColumnChart, DonutChart } from "../../components/charts.jsx";
 import { formatRelative } from "../../utils/format.js";
+
+// "2026-06-14" → "Jun 14" for compact chart axis labels.
+function shortDay(iso) {
+  try {
+    return new Date(iso + "T00:00:00Z").toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
@@ -249,6 +263,108 @@ export default function AdminHome() {
           </div>
         </Card>
       </motion.div>
+
+      {/* System insights — charts. Each card appears only if you can see its
+          underlying data, and each carries a one-line "what this teaches" note. */}
+      {(summary?.loginsByDay ||
+        summary?.auditLogs?.byType ||
+        summary?.users?.byRole ||
+        summary?.sessions?.active != null) && (
+        <motion.div variants={fadeUp} className="space-y-2">
+          <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">
+            System insights
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {summary?.loginsByDay && (
+              <Card padded>
+                <CardHeader
+                  title="Logins over time"
+                  subtitle="Authentication activity in the last 7 days — every successful login is an audit event."
+                />
+                <div className="mt-5">
+                  {summaryLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : (
+                    <ColumnChart
+                      data={summary.loginsByDay.map((d) => ({
+                        label: shortDay(d.day),
+                        value: d.count,
+                      }))}
+                    />
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {summary?.sessions?.active != null && (
+              <Card padded>
+                <CardHeader
+                  title="Sessions: active vs revoked"
+                  subtitle="A revocable session is the off-switch a bare JWT doesn't have."
+                />
+                <div className="mt-5">
+                  {summaryLoading ? (
+                    <Skeleton className="h-28 w-full" />
+                  ) : (
+                    <DonutChart
+                      centerLabel="sessions"
+                      segments={[
+                        { label: "Active", value: summary.sessions.active, color: "#34d399" },
+                        {
+                          label: "Revoked / expired",
+                          value: summary.sessions.revoked ?? 0,
+                          color: "#f87171",
+                        },
+                      ]}
+                    />
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {summary?.users?.byRole && (
+              <Card padded>
+                <CardHeader
+                  title="Users by role"
+                  subtitle="RBAC in one picture — roles bundle permissions, and this is who holds each role."
+                />
+                <div className="mt-5">
+                  {summaryLoading ? (
+                    <Skeleton className="h-32 w-full" />
+                  ) : (
+                    <BarChart
+                      data={summary.users.byRole.map((r) => ({
+                        label: r.role,
+                        value: r.count,
+                      }))}
+                    />
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {summary?.auditLogs?.byType && (
+              <Card padded>
+                <CardHeader
+                  title="Audit events by type"
+                  subtitle="What kinds of sensitive actions are happening across the system."
+                />
+                <div className="mt-5">
+                  {summaryLoading ? (
+                    <Skeleton className="h-32 w-full" />
+                  ) : (
+                    <BarChart
+                      data={summary.auditLogs.byType
+                        .slice(0, 8)
+                        .map((r) => ({ label: r.action, value: r.count }))}
+                    />
+                  )}
+                </div>
+              </Card>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Modules */}
       <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-6">

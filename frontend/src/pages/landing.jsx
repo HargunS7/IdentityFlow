@@ -70,6 +70,12 @@ export default function Landing() {
             >
               Read the IAM primer
             </button>
+            <button
+              onClick={() => navigate("/concepts")}
+              className="rounded-2xl px-5 py-3 text-sm font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
+            >
+              Watch IAM flows
+            </button>
           </motion.div>
 
           <motion.div
@@ -317,6 +323,9 @@ export default function Landing() {
           <div className="flex gap-4">
             <button onClick={() => navigate("/learn")} className="hover:text-white transition">
               Learn
+            </button>
+            <button onClick={() => navigate("/concepts")} className="hover:text-white transition">
+              Concepts
             </button>
             <button onClick={() => navigate("/login")} className="hover:text-white transition">
               Login

@@ -18,6 +18,7 @@ import {
 // All pages are code-split. The route loading state shows a centered spinner.
 const Landing       = lazy(() => import("./pages/landing.jsx"));
 const LearnIAM      = lazy(() => import("./pages/learnIAM.jsx"));
+const Concepts      = lazy(() => import("./pages/concepts.jsx"));
 const Login         = lazy(() => import("./pages/login.jsx"));
 const Signup        = lazy(() => import("./pages/signup.jsx"));
 const Dashboard     = lazy(() => import("./pages/dashboard.jsx"));
@@ -63,6 +64,7 @@ function AppRoutes() {
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Landing />} />
             <Route path="/learn" element={<LearnIAM />} />
+            <Route path="/concepts" element={<Concepts />} />
           </Route>
 
           {/* AUTH */}

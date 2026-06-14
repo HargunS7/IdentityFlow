@@ -61,6 +61,12 @@ export default function LearnIAM() {
             {isAuthed ? "Open dashboard" : "Sign in to try it"}
           </button>
           <button
+            onClick={() => navigate("/concepts")}
+            className="rounded-2xl px-5 py-3 text-sm font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
+          >
+            Watch animated flows
+          </button>
+          <button
             onClick={() => navigate("/")}
             className="rounded-2xl px-5 py-3 text-sm font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition"
           >

@@ -183,9 +183,16 @@ security checklist, and the manual Supabase dashboard steps.
 
 ## Testing
 ```bash
-cd backend && npm test         # Vitest: auth, RBAC, sessions
+cd backend  && npm test        # Vitest: auth, RBAC, sessions
+cd frontend && npm test        # Vitest + Testing Library: public pages, charts
 cd frontend && npm run build   # production build must succeed
 ```
+
+## Learning surfaces
+- `/` — landing: what IAM is, who it's for, demo credentials.
+- `/learn` — written primer covering all 7 concepts, mapped to live pages.
+- `/concepts` — five self-playing animated flows (login, authorization, RBAC, JIT, session revoke).
+- `/admin` — live console with **System insights** charts (logins over time, sessions active vs revoked, users by role, audit events by type).
 
 ## Out of scope (by design, this phase)
 Password reset, MFA enrollment flows, SSO, webhooks, and API tokens are

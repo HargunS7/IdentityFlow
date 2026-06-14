@@ -91,6 +91,7 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-1">
               <NavItem to="/dashboard">Dashboard</NavItem>
               <NavItem to="/learn">Learn IAM</NavItem>
+              <NavItem to="/concepts">Concepts</NavItem>
               <NavItem to="/account">Account</NavItem>
 
               {showConsole && (
@@ -200,6 +201,7 @@ export default function Navbar() {
                 <div className="mt-3 border-t border-white/10 pt-3 flex flex-col gap-1.5">
                   <MobileItem to="/dashboard">Dashboard</MobileItem>
                   <MobileItem to="/learn">Learn IAM</MobileItem>
+                  <MobileItem to="/concepts">Concepts</MobileItem>
                   <MobileItem to="/account">Account</MobileItem>
 
                   {showConsole && (
