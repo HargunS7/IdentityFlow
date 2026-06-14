@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
 import { PERMISSIONS, ROLES } from "../utils/permissions.js";
+import { BrandMark } from "./ui.jsx";
 
 function cx(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -76,7 +77,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between gap-3">
             {/* Brand */}
             <Link to="/dashboard" className="flex items-center gap-3 group">
-              <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-indigo-400/80 via-fuchsia-400/70 to-rose-400/60 border border-white/15 shadow-[0_4px_18px_rgba(127,127,255,0.35)]" />
+              <BrandMark className="h-9 w-9" />
               <div className="leading-tight">
                 <div className="text-white font-semibold tracking-tight">
                   IdentityFlow

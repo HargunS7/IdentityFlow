@@ -495,3 +495,36 @@ export function Mono({ children }) {
     <span className="font-mono text-xs text-white/80 break-all">{children}</span>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/*                               Brand mark                                   */
+/* -------------------------------------------------------------------------- */
+
+// Keyhole-on-gradient mark — matches the favicon (public/identityflow.svg).
+export function BrandMark({ className = "h-9 w-9" }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      className={`${className} shrink-0 drop-shadow-[0_4px_18px_rgba(127,127,255,0.35)]`}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient
+          id="brandmark-g"
+          x1="0"
+          y1="0"
+          x2="64"
+          y2="64"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" stopColor="#818cf8" />
+          <stop offset="0.5" stopColor="#e879f9" />
+          <stop offset="1" stopColor="#fb7185" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#brandmark-g)" />
+      <circle cx="32" cy="27" r="8" fill="#0b0f19" />
+      <path d="M28 33 h8 l-2.5 13 h-3 z" fill="#0b0f19" />
+    </svg>
+  );
+}
