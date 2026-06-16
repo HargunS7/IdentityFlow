@@ -8,7 +8,7 @@ You don't just read about IAM here; you log in, get roles, watch permissions
 resolve, revoke a session and see it die on the next request, grant yourself a
 permission that expires in minutes, and watch every action land in an audit log.
 
-> **Live demo:** _add your Vercel URL here_ · frontend on **Vercel**, backend on **Render**.
+> **Live demo:** **[identity-flow-mu.vercel.app](https://identity-flow-mu.vercel.app)** · frontend on **Vercel**, backend on **Render**.
 > No account needed — the login page has an **"Explore the live demo"** button that
 > signs you in as a safe, read-only demo account. (All demo accounts use the
 > password `Demo@12345`.)
