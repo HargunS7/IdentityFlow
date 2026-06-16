@@ -8,6 +8,11 @@ You don't just read about IAM here; you log in, get roles, watch permissions
 resolve, revoke a session and see it die on the next request, grant yourself a
 permission that expires in minutes, and watch every action land in an audit log.
 
+> **Live demo:** _add your Vercel URL here_ · frontend on **Vercel**, backend on **Render**.
+> No account needed — the login page has an **"Explore the live demo"** button that
+> signs you in as a safe, read-only demo account. (All demo accounts use the
+> password `Demo@12345`.)
+
 ---
 
 ## Who it's for
@@ -28,13 +33,28 @@ permission that expires in minutes, and watch every action land in an audit log.
 - **Audit logs** — who did what, when, from where — and why security teams need it.
 - **Temporary / JIT access** — grant a permission for minutes, auto-expiring, fully audited.
 
+## In the app
+
+- **Public site** — landing (what IAM is, who it's for), a written primer (`/learn`),
+  and `/concepts`: five self-playing, scroll-triggered animated flows (login,
+  authorization, RBAC, JIT, session revoke).
+- **One-click demo** — sign in as a read-only `demo` account with no signup.
+- **Admin console** (`/admin`) — Dashboard with **System insights** charts (logins
+  over time, sessions active vs revoked, users by role, audit events by type),
+  plus Users & Roles, Sessions, Audit Logs, and Temporary Access pages with
+  search/filter, pagination, optimistic updates, confirm dialogs, and toasts.
+- **Self-healing demo** — an admin "Reset demo data" button and an optional
+  idle-aware `pg_cron` job restore the demo so visitors can't break it.
+
 ---
 
 ## Tech stack
 
 - **Frontend:** React 19 + Vite, React Router, TanStack Query, Framer Motion, Tailwind CSS.
 - **Backend:** Node + Express 5, Prisma ORM, Argon2id, JWT, Helmet, rate limiting.
-- **Database:** PostgreSQL (hosted on Supabase).
+- **Database:** PostgreSQL (hosted on Supabase); `pg_cron` for the optional demo auto-reset.
+- **Tests:** Vitest on both sides (backend: auth/RBAC/sessions; frontend: Testing Library).
+- **Hosting:** frontend on Vercel, backend on Render — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Architecture
 
@@ -120,15 +140,20 @@ cd frontend && npm run dev      # http://localhost:5173
 
 ### Demo users (from the seed)
 All share the password `Demo@12345` (override with `DEMO_PASSWORD` when seeding).
-Log in as each to see how RBAC changes what the console exposes:
+The login page's **"Explore the live demo"** button signs you in as `demo` with
+no typing. Log in as the others to see how RBAC changes what the console exposes:
 
 | Role | Email | Can do |
 |---|---|---|
-| admin | admin@example.com | Everything |
-| manager | manager@example.com | Read/update users |
+| **demo** (one-click) | demo@example.com | View every console page + try JIT — **no destructive actions** |
+| admin | admin@example.com | Everything (exists, but not advertised publicly on the live demo) |
+| manager | manager@example.com | Read / update users |
 | security_analyst | security@example.com | Read audit + read/revoke sessions |
 | auditor | auditor@example.com | Read audit logs |
 | user | user@example.com | Basic read only |
+
+For the live deploy, seed these accounts and the self-healing reset via
+**[docs/DEMO_SEED.md](docs/DEMO_SEED.md)**.
 
 ---
 
@@ -188,12 +213,24 @@ cd frontend && npm test        # Vitest + Testing Library: public pages, charts
 cd frontend && npm run build   # production build must succeed
 ```
 
-## Learning surfaces
-- `/` — landing: what IAM is, who it's for, demo credentials.
-- `/learn` — written primer covering all 7 concepts, mapped to live pages.
-- `/concepts` — five self-playing animated flows (login, authorization, RBAC, JIT, session revoke).
-- `/admin` — live console with **System insights** charts (logins over time, sessions active vs revoked, users by role, audit events by type).
+## Deployment
 
-## Out of scope (by design, this phase)
+Frontend → **Vercel** (`frontend/vercel.json` sets the Vite framework + SPA
+rewrite so deep links don't 404). Backend → **Render** (`render.yaml` blueprint:
+root `backend`, `prisma generate` at build, `/health` check). Because the two
+live on different domains, the backend serves `SameSite=None; Secure` cookies in
+production automatically. A free-tier backend sleeps when idle, so point an
+uptime pinger at `/health` (~10 min) to keep it warm. Full walkthrough, env
+plan, and pre-deploy/security checklists: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+
+The frontend also auto-recovers from stale chunks after a redeploy (a failed
+lazy import reloads once) and wraps routes in an error boundary, so navigation
+never leaves a blank screen.
+
+## Docs
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — Vercel + Render + uptime, env vars, RLS/Data-API decision, checklists.
+- **[docs/DEMO_SEED.md](docs/DEMO_SEED.md)** — seed the demo accounts + the `demo` role, and set up the idle-aware self-healing reset (`pg_cron`).
+
+## Out of scope (for now)
 Password reset, MFA enrollment flows, SSO, webhooks, and API tokens are
-intentionally **not** part of this phase.
+intentionally **not** included yet — the focus is teaching core IAM well.
